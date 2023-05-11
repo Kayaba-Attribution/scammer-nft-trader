@@ -72,9 +72,9 @@ Planned:
 > Mutant Hound Collars 6262 sold for less than -99% of the floor price
 ```
 5 findings for transaction 0x4fff109d9a6c030fce4de9426229a113524903f0babd6de11ee6c046d07226ff {
-  "name": "nft-possible-phishing-transfer",
+  "name": "scammer-nft-trader",
   "description": "Mutant Hound Collars 6262 sold for less than -99% of the floor price",
-  "alertId": "scammer-nft-trader",
+  "alertId": "nft-possible-phishing-transfer",
   "protocol": "ethereum",
   "severity": "Info",
   "type": "Suspicious",
@@ -132,9 +132,9 @@ Planned:
 
 ```
 1 findings for transaction 0xdc6fd3c2846f330aec65615341789397e1a9bb37a471851fe68b2db20a5a7b9f {
-  "name": "nft-phishing-sale",
+  "name": "scammer-nft-trader",
   "description": "Mutant Hound Collars 6262 sold to 0x679d5162BaD71990ABCA0f18095948c12a2756B0 by 0xBF96d79074b269F75c20BD9fa6DAed0773209EE7 possibly stolen from 0x08395C15C21DC3534B1C3b1D4FA5264E5Bd7020C in opensea at -0.17% of floor after 423.4 minutes for a profit of 0.5788000000000001",
-  "alertId": "scammer-nft-trader",
+  "alertId": "nft-phishing-sale",
   "protocol": "ethereum",
   "severity": "Info",
   "type": "Exploit",

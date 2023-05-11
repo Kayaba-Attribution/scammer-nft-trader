@@ -39,9 +39,9 @@ export function createCustomAlert(
 
 
   const findingInput = {
-    name,
+    name: 'scammer-nft-trader',
     description,
-    alertId: 'scammer-nft-trader',
+    alertId: name,
     severity: FindingSeverity.Info,
     type: findingType,
     metadata,
