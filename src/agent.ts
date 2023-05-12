@@ -1,13 +1,10 @@
 import {
-  BlockEvent,
   Finding,
   Initialize,
-  HandleBlock,
   HandleTransaction,
   HandleAlert,
   AlertEvent,
   TransactionEvent,
-  FindingSeverity,
   FindingType,
   ethers,
   EntityType,
@@ -15,24 +12,20 @@ import {
 } from "forta-agent";
 
 import { createCustomAlert } from "./utils/alerts";
-import db from './db';
+import db, { ALCHEMY_API_KEY } from './db';
 import { addTransactionRecord, getTransactionsByAddress, getTransactionByHash, getLatestTransactionRecords } from './client';
 
 import { Network, Alchemy } from 'alchemy-sdk';
 import { transferEventTopics } from "./config/logEventTypes";
 import retry from 'async-retry';
-// import type { ContractData, CustomError, TokenData, BatchContractInfo, NftContract } from '../src/types/types';
-import type { NftTokenType, NftContract } from 'alchemy-sdk';
+import type { NftContract } from 'alchemy-sdk';
 import { transferIndexer } from './controllers/parseTx.js';
 
-import type { ItemType, TransactionRecord, TransactionData } from './types/types.js';
+import type { TransactionRecord, TransactionData } from './types/types.js';
 import { markets } from './config/markets.js';
-import { first } from "lodash";
-
-const ALCHEMY_API_KEY = 't-5Nqme-a-CPdUpMvR-KWcb5Il82Jz2S';
 
 
-let findingsCount = 0;
+
 let nftContractsData: NftContract[] = [];
 
 /**	
@@ -154,6 +147,7 @@ const handleTransaction: HandleTransaction = async (
 
           console.log("----- Accesed records on db by contract and tokenId (more recent 2) -----")
           //console.log(records)
+          let global_name = record.tokens[tokenId].name ? record.tokens[tokenId].name : record.contractAddress
 
           if (records.length > 1) {
             // compare the timestamp of the last two records and save the result in minutes
@@ -182,11 +176,11 @@ const handleTransaction: HandleTransaction = async (
             //console.log("Address match:", addressMatch);
             if (addressMatch) {
 
-              let find_description = `${record.tokens[tokenId].name} ${tokenId} sold to ${records[0].transaction.to_address} by ${records[1].transaction.to_address} in ${record.interactedMarket} at ${records[0].transaction.floor_price_diff} of floor after ${timeDifferenceMinutes} minutes`;
+              let find_description = `${global_name ? global_name : record.contractAddress} ${tokenId} sold to ${records[0].transaction.to_address} by ${records[1].transaction.to_address} in ${record.interactedMarket} at ${records[0].transaction.floor_price_diff} of floor after ${timeDifferenceMinutes} minutes`;
               let findType: FindingType = FindingType.Info;
               let find_name = `indexed-nft-sale`
               let floorDiffs = Math.abs(extractNumericalValue(floorPriceDiffs[1].floorPriceDiff)) - Math.abs(extractNumericalValue(floorPriceDiffs[0].floorPriceDiff))
-              //console.log("record", records)
+
 
               let alert: Finding;
               let alertLabel: Label[] = [];
@@ -195,7 +189,7 @@ const handleTransaction: HandleTransaction = async (
                 let victim = records[1].transaction.from_address;
                 let attacker = records[1].transaction.to_address;
                 let profit = avgItemPriceDifference;
-                find_description = `${record.tokens[tokenId].name} ${tokenId} sold to ${records[0].transaction.to_address} by ${records[1].transaction.to_address} possibly stolen from ${victim} in ${record.interactedMarket} at ${records[0].transaction.floor_price_diff} of floor after ${timeDifferenceMinutes} minutes for a profit of ${profit}`;
+                find_description = `${global_name} ${tokenId} sold to ${records[0].transaction.to_address} by ${records[1].transaction.to_address} possibly stolen from ${victim} in ${record.interactedMarket} at ${records[0].transaction.floor_price_diff} of floor after ${timeDifferenceMinutes} minutes for a profit of ${profit}`;
                 findType = FindingType.Exploit;
                 find_name = `nft-phishing-sale`
 
@@ -265,8 +259,7 @@ const handleTransaction: HandleTransaction = async (
             if (record.tokens) {
               for (const tokenKey in record.tokens) {
                 const token = record.tokens[tokenKey];
-                const tokenName = token.name;
-
+                const tokenName = token.name ? token.name : record.contractAddress;
                 let alert_description;
                 let alert_name;
                 let alertLabel: Label[] = [];
@@ -277,7 +270,6 @@ const handleTransaction: HandleTransaction = async (
                 } else if (numericalValue < -99) {
                   alert_name = `nft-possible-phishing-transfer`;
                   alert_description = `${tokenName} ${tokenKey} sold for less than -99% of the floor price`;
-                  console.log("record", record)
                   alertLabel.push({
                     entityType: EntityType.Address,
                     entity: `${record.fromAddr}`,
@@ -286,7 +278,7 @@ const handleTransaction: HandleTransaction = async (
                     remove: false,
                     metadata: {}
                   })
-  
+
                   alertLabel.push({
                     entityType: EntityType.Address,
                     entity: `${record.toAddr}`,
@@ -295,7 +287,7 @@ const handleTransaction: HandleTransaction = async (
                     remove: false,
                     metadata: {}
                   })
-  
+
                   alertLabel.push({
                     entityType: EntityType.Address,
                     entity: `${tokenKey},${record.contractAddress}`,
@@ -308,7 +300,7 @@ const handleTransaction: HandleTransaction = async (
 
                 } else {
                   alert_name = `indexed-nft-sale`;
-                  alert_description = `${tokenName} ${tokenKey} sold at ${numericalValue}% of the floor price`;
+                  alert_description = `${tokenName} id ${tokenKey} sold at ${(record.avgItemPrice).toFixed(3)} (no floor price detected)`;
                   alertLabel.push({
                     entityType: EntityType.Address,
                     entity: `${tokenKey},${record.contractAddress}`,
@@ -325,7 +317,7 @@ const handleTransaction: HandleTransaction = async (
                   alert_name,
                   FindingType.Suspicious
                 );
-                
+
                 alert.addresses.push(record.fromAddr!);
                 alert.addresses.push(record.toAddr!);
                 alert.addresses.push(record.initiator!);

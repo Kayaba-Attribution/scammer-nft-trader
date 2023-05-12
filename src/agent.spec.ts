@@ -3,9 +3,17 @@ import {
     FindingSeverity,
     Finding,
     HandleTransaction,
-    createTransactionEvent,
-    ethers,
+    createTransactionEvent
 } from "forta-agent";
+
+// ! TODO FIX
+/**
+    /home/kayaba/WORK FORTA/scammer-nft-trader/node_modules/@adraffy/ens-normalize/dist/index.js:1177
+    export { ens_beautify, ens_emoji, ens_normalize, ens_normalize_fragment, ens_split, ens_tokenize, is_combining_mark, nfc, nfd, safe_str_from_cps, should_escape };
+    ^^^^^^
+
+    SyntaxError: Unexpected token 'export'
+ */
 
 import agent from "./agent";
 
@@ -14,20 +22,27 @@ import { addTransactionRecord, getTransactionsByAddress, getTransactionByHash, g
 
 import type { MarketName } from "./types/types";
 
-function getRandomTxHash() {
-    const randomBytes = ethers.utils.randomBytes(32);
-    const randomTxHash = ethers.utils.hexlify(randomBytes);
+import crypto from 'crypto';
+
+function toHexString(byteArray: Uint8Array): string {
+    return '0x' + Array.from(byteArray, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function getRandomTxHash(): string {
+    const randomBytes = crypto.randomBytes(32);
+    const randomTxHash = toHexString(new Uint8Array(randomBytes));
     return randomTxHash;
 }
 
-function getRandomAddress() {
-    const bytes = ethers.utils.randomBytes(20);
-    const randomAddress = ethers.utils.hexlify(ethers.utils.arrayify(bytes));
+function getRandomAddress(): string {
+    const bytes = crypto.randomBytes(20);
+    const randomAddress = toHexString(new Uint8Array(bytes));
     return randomAddress;
 }
 
+
 function newRecord(fromAddr: string, toAddr: string, initiator: string,
-     contractAddress: string, ) {
+    contractAddress: string,) {
     const record = {
         interactedMarket: 'opensea' as MarketName,
         transactionHash: getRandomTxHash(),
@@ -63,7 +78,7 @@ describe("NFT trader test", () => {
         ca = getRandomAddress();
     });
 
-    
+
     describe("Records db check", () => {
         it("adds a new record", async () => {
             const record1 = newRecord(
@@ -74,6 +89,6 @@ describe("NFT trader test", () => {
             );
             await addTransactionRecord(db, record1);
         });
-        
+
     });
 });
