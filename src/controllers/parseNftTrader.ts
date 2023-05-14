@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
-import { formatPrice } from '../utils/helper.js';
-import { currencies } from '../config/markets.js';
+import { formatPrice } from '../utils/helper';
+import { currencies } from '../config/markets';
 
 import type { TransactionData } from '../types';
 import { ItemType } from '../types';

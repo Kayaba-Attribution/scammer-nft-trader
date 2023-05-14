@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { createRequire } from 'module';
-import { currencies } from '../config/markets.js';
+import { currencies } from '../config/markets';
 
 import type { Provider } from 'ethers';
 import type { TokenData, Market, CurrencyAddress } from 'src/types/types.js';

@@ -1,4 +1,4 @@
-import { markets } from './markets.js';
+import { markets } from './markets';
 import type { BatchContractInfo, TransactionData } from '../types';
 import { NftContract } from 'alchemy-sdk';
 

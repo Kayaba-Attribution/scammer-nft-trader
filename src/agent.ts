@@ -22,7 +22,7 @@ import type { NftContract } from 'alchemy-sdk';
 import { transferIndexer } from './controllers/parseTx.js';
 
 import type { TransactionRecord, TransactionData } from './types/types.js';
-import { markets } from './config/markets.js';
+import { markets } from './config/markets';
 
 
 

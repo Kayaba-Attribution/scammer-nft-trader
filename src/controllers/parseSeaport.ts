@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
-import { formatPrice, setTokenData } from '../utils/helper.js';
-import { markets, currencies } from '../config/markets.js';
-import { parseNftTrader } from './parseNftTrader.js';
+import { formatPrice, setTokenData } from '../utils/helper';
+import { markets, currencies } from '../config/markets';
+import { parseNftTrader } from './parseNftTrader';
 
 import type { Log, Interface } from 'ethers';
 

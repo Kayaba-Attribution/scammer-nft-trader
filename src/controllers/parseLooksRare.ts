@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
-import { setTokenData } from '../utils/helper.js';
-import { currencies } from '../config/markets.js';
+import { setTokenData } from '../utils/helper';
+import { currencies } from '../config/markets';
 
 import type { Log, Interface } from 'ethers';
 import type { Market, TransactionData } from '../types';

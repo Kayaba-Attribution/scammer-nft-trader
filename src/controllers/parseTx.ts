@@ -14,15 +14,16 @@ import Web3EthAbi from 'web3-eth-abi';
 
 
 // config
-import { markets, currencies } from '../config/markets.js';
-import { saleEventTopics, cancelEventTypes } from '../config/logEventTypes.js';
-import { initializeTransactionData } from '../config/initialize.js';
+import { markets, currencies } from '../config/markets';
+import { saleEventTopics, cancelEventTypes } from '../config/logEventTypes';
+import { initializeTransactionData } from '../config/initialize';
+
 
 import ABI from '../abi/ABI.json';
 // parsers
-import { parseSeaport } from './parseSeaport.js';
-import { parseLooksRare } from './parseLooksRare.js';
-import { parseBlur } from './parseBlur.js';
+import { parseSeaport } from './parseSeaport';
+import { parseLooksRare } from './parseLooksRare';
+import { parseBlur } from './parseBlur';
 //import { parseSaleToken } from './parseSaleToken.js';
 
 // api

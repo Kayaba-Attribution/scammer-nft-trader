@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { setTokenData } from '../utils/helper.js';
+import { setTokenData } from '../utils/helper';
 
 import type { Log, Interface } from 'ethers';
 import type { Market, TransactionData } from '../types';
