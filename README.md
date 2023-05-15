@@ -283,3 +283,8 @@ The agent behaviour can be verified with the following transactions:
 - 0xd7dbed24b00aa1ad13070da9221f10b050c1cdaf75f161e9ec5e3582f2450943 Blur
 
 npm run tx 0x4fff109d9a6c030fce4de9426229a113524903f0babd6de11ee6c046d07226ff,0xdc6fd3c2846f330aec65615341789397e1a9bb37a471851fe68b2db20a5a7b9f
+
+## Current Test Suite:
+
++ Database (add retrieve)
++ 

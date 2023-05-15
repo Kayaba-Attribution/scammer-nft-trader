@@ -23,10 +23,12 @@ import { transferIndexer } from './controllers/parseTx.js';
 
 import type { TransactionRecord, TransactionData } from './types/types.js';
 import { markets } from './config/markets';
+import { getCurrentTimestamp } from "./utils/tests";
 
 
 
 let nftContractsData: NftContract[] = [];
+let chainCurrency: string = 'ETH';
 
 /**	
   Phishers/scammers that steal NFTs eventually need to sell them.
@@ -65,7 +67,8 @@ function compareKeysAndElements(obj: { [key: string]: boolean }, arr: string[]):
 }
 
 const handleTransaction: HandleTransaction = async (
-  txEvent: TransactionEvent
+  txEvent: TransactionEvent,
+  testAPI?: NftContract[]
 ) => {
   const findings: Finding[] = [];
 
@@ -83,7 +86,12 @@ const handleTransaction: HandleTransaction = async (
   }
 
   // get all the information for the contracts
-  nftContractsData = await getBatchContractData(Object.keys(txEvent.addresses));
+  if (!testAPI) {
+    nftContractsData = await getBatchContractData(Object.keys(txEvent.addresses));
+  } else {
+    console.log("Test Data Loaded")
+    nftContractsData = testAPI;
+  }
 
   for (const info of nftContractsData) {
     try {
@@ -101,14 +109,14 @@ const handleTransaction: HandleTransaction = async (
           record = {
             interactedMarket: find.interactedMarket.name,
             transactionHash: find.transactionHash,
-            toAddr: find.toAddr,
-            fromAddr: find.fromAddr,
-            initiator: txEvent.from,
+            toAddr: (find.toAddr)?.toLowerCase(),
+            fromAddr: (find.fromAddr)?.toLowerCase(),
+            initiator: !testAPI ? txEvent.from : find.fromAddr,
             totalPrice: find.totalPrice,
             avgItemPrice: _avgItemPrice,
             contractAddress: find.contractAddress,
             floorPrice: _floorPrice,
-            timestamp: txEvent.timestamp,
+            timestamp: !testAPI ? txEvent.timestamp : getCurrentTimestamp(),
             tokens: {},
             floorPriceDiff: calculateFloorPriceDiff(_avgItemPrice, _floorPrice)
           }
@@ -254,6 +262,12 @@ const handleTransaction: HandleTransaction = async (
             }
           } else {
             console.log("----- Only one record available -----")
+            /*
+              ONLY ONE RECORD AVAILABLE:
+              + record is the tx that was just indexed
+              + create alerts based on current data (no comparison)
+            */
+
             // get the floor price change ie: -99% or 350%
             const numericalValue = extractNumericalValue(record.floorPriceDiff)
             if (record.tokens) {
@@ -299,8 +313,15 @@ const handleTransaction: HandleTransaction = async (
 
 
                 } else {
+                  /**
+                   * ALL NEW REGULAR SALES GO HERE
+                   */
+                  let floorMessage = record.floorPrice ? `with collection floor of ${record.floorPrice} ${chainCurrency}` : ` (no floor price detected)`;
+                  //console.log(JSON.stringify(find.tokens[tokenKey] , null, 2))
+                  let currencyType;
+                  //let currencyType = find && tokenKey && find.tokens[tokenKey] ? find.tokens[tokenKey].markets!.price.currency.name : chainCurrency;
                   alert_name = `indexed-nft-sale`;
-                  alert_description = `${tokenName} id ${tokenKey} sold at ${(record.avgItemPrice).toFixed(3)} (no floor price detected)`;
+                  alert_description = `${tokenName} id ${tokenKey} sold at ${(record.avgItemPrice).toFixed(3)} ${currencyType || chainCurrency} ${floorMessage}`;
                   alertLabel.push({
                     entityType: EntityType.Address,
                     entity: `${tokenKey},${record.contractAddress}`,

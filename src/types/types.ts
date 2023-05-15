@@ -26,6 +26,7 @@ export type TokenData = {
     name: string;
     markets?: {
         [key: string]: {
+            [x: string]: any;
             market: Market;
             amount: number;
             price: {

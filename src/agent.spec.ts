@@ -2,50 +2,31 @@ import {
     FindingType,
     FindingSeverity,
     Finding,
-    HandleTransaction,
-    createTransactionEvent
+    createTransactionEvent,
+    TransactionEvent,
+    ethers
 } from "forta-agent";
 
-// ! TODO FIX
-/**
-    /home/kayaba/WORK FORTA/scammer-nft-trader/node_modules/@adraffy/ens-normalize/dist/index.js:1177
-    export { ens_beautify, ens_emoji, ens_normalize, ens_normalize_fragment, ens_split, ens_tokenize, is_combining_mark, nfc, nfd, safe_str_from_cps, should_escape };
-    ^^^^^^
-
-    SyntaxError: Unexpected token 'export'
- */
-
-import agent from "./agent";
 
 import db from './db';
-import { addTransactionRecord, getTransactionsByAddress, getTransactionByHash, getLatestTransactionRecords } from './client';
+import agent from "./agent";
 
-import type { MarketName } from "./types/types";
-
-import crypto from 'crypto';
-
-function toHexString(byteArray: Uint8Array): string {
-    return '0x' + Array.from(byteArray, byte => byte.toString(16).padStart(2, '0')).join('');
-}
-
-function getRandomTxHash(): string {
-    const randomBytes = crypto.randomBytes(32);
-    const randomTxHash = toHexString(new Uint8Array(randomBytes));
-    return randomTxHash;
-}
-
-function getRandomAddress(): string {
-    const bytes = crypto.randomBytes(20);
-    const randomAddress = toHexString(new Uint8Array(bytes));
-    return randomAddress;
-}
+import { getRandomAddress, getRandomTxHash, createBatchContractInfo } from './utils/tests';
+import { addTransactionRecord, getTransactionByHash, getLatestTransactionRecords } from './client';
+import type { MarketName, TransactionRecord } from "./types/types";
+import type { NftContract } from 'alchemy-sdk';
 
 
-function newRecord(fromAddr: string, toAddr: string, initiator: string,
-    contractAddress: string,) {
-    const record = {
+function newRecord(
+    fromAddr: string,
+    toAddr: string,
+    initiator: string,
+    contractAddress: string,
+    hash: string
+) {
+    const record: TransactionRecord = {
         interactedMarket: 'opensea' as MarketName,
-        transactionHash: getRandomTxHash(),
+        transactionHash: hash,
         toAddr: toAddr,
         fromAddr: fromAddr,
         initiator: initiator,
@@ -61,6 +42,9 @@ function newRecord(fromAddr: string, toAddr: string, initiator: string,
     return record;
 }
 
+type HandleTransaction = (txEvent: TransactionEvent, test?: NftContract[]) => Promise<Finding[]>;
+
+jest.setTimeout(10000);
 describe("NFT trader test", () => {
     let handleTransaction: HandleTransaction;
     const mockTxEvent = createTransactionEvent({} as any);
@@ -70,6 +54,7 @@ describe("NFT trader test", () => {
     let jack: string;
     let ca: string;
 
+
     beforeAll(() => {
         handleTransaction = agent.handleTransaction;
         bob = getRandomAddress();
@@ -78,16 +63,90 @@ describe("NFT trader test", () => {
         ca = getRandomAddress();
     });
 
+    describe("Transaction records", () => {
 
-    describe("Records db check", () => {
         it("adds a new record", async () => {
-            const record1 = newRecord(
+            const txOneHash = getRandomTxHash();
+            const record1 = newRecord(bob, alice, bob, ca, txOneHash);
+            await addTransactionRecord(db, record1);
+    
+            const recordFromHash = await getTransactionByHash(db, txOneHash);
+    
+            expect(recordFromHash).toEqual(record1);
+        });
+    
+        it("adds multiple records", async () => {
+            const txOneHash = getRandomTxHash();
+            const record1 = newRecord(bob, alice, bob, ca, txOneHash);
+            await addTransactionRecord(db, record1);
+    
+            const txTwoHash = getRandomTxHash();
+            const record2 = newRecord(bob, alice, bob, ca, txTwoHash);
+            await addTransactionRecord(db, record2);
+    
+            const recordFromHash1 = await getTransactionByHash(db, txOneHash);
+            const recordFromHash2 = await getTransactionByHash(db, txTwoHash);
+    
+            expect(recordFromHash1).toEqual(record1);
+            expect(recordFromHash2).toEqual(record2);
+        });
+    
+        it("throws an error when adding a record with duplicate hash", async () => {
+            expect.assertions(1);
+            const ca2 = getRandomAddress();
+            const txOneHash = getRandomTxHash();
+            const record1 = newRecord(bob, alice, bob, ca, txOneHash);
+            await addTransactionRecord(db, record1);
+    
+            const record2 = newRecord(alice, bob, alice, ca2, txOneHash);
+    
+            await expect(addTransactionRecord(db, record2)).rejects.toThrow(
+                "SQLITE_CONSTRAINT: UNIQUE constraint failed: transactions.transaction_hash"
+            );
+        });
+    });
+    
+
+    describe("Records and retrives tx from db", () => {
+   
+        it("Stores New Tx on the db and triggers info alert", async () => {
+            let randomContract = getRandomAddress();
+            let txHash = getRandomTxHash();
+            let [mockApi, criticalEvent] = createBatchContractInfo(
+                randomContract,
+                'TEST NFT CONTRACT',
+                'TSTNFT',
+                '100',
+                'ERC721',
+                [95],
+                100,
                 bob,
                 alice,
-                jack,
-                ca
+                ['777'],
+                txHash
+            )
+            const findings = await handleTransaction(criticalEvent, mockApi);
+            let recordFromHash = await getTransactionByHash(db, txHash);
+            console.log(JSON.stringify(findings, null, 2))
+            console.log(recordFromHash)
+
+            expect(findings.length).toBe(1);
+            expect(findings[0].metadata.floorPriceDiff).toBe("-5.00%")
+            expect(findings[0].metadata.fromAddr).toBe(bob);
+            expect(findings[0].metadata.toAddr).toBe(alice);
+            expect(findings[0].labels).toStrictEqual(
+                [
+                    {
+                        "entityType": 1,
+                        "entity": `777,${randomContract}`,
+                        "label": "nft-sale-record",
+                        "confidence": 0.9,
+                        "remove": false,
+                        "metadata": {}
+                    }
+                ]
             );
-            await addTransactionRecord(db, record1);
+
         });
 
     });

@@ -82,6 +82,8 @@ const parseSeaport = (
     // if target nft on offer side, then consideration is the total price
     // else offer is the total price
     if (nftOnOfferSide) {
+        console.log("consideration", consideration)
+        console.log("offer", offer)
         const totalConsiderationAmount = consideration.reduce(
             getReducer(tx),
             0
@@ -197,7 +199,6 @@ const parse = (
     token_id: { value: string }
 ): boolean => {
     let isNft = false;
-
     for (const item of items) {
         if (item.token.toLowerCase() === tx.contractAddress) {
             const tokenId = item.identifier;

@@ -12,7 +12,6 @@ export const initializeTransactionData = (
         markets[recipient].name
     );
     let tx: TransactionData;
-    //console.log("initializeTransactionData running...")
     try {
         tx = {
             interactedMarket: markets[recipient],
