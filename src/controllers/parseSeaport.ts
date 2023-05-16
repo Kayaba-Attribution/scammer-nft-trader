@@ -82,8 +82,8 @@ const parseSeaport = (
     // if target nft on offer side, then consideration is the total price
     // else offer is the total price
     if (nftOnOfferSide) {
-        console.log("consideration", consideration)
-        console.log("offer", offer)
+        //console.log("consideration", consideration)
+        //console.log("offer", offer)
         const totalConsiderationAmount = consideration.reduce(
             getReducer(tx),
             0

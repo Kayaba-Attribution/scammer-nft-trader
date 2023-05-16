@@ -6,6 +6,7 @@ export function createCustomAlert(
   description: string,
   name: string,
   findingType: FindingType,
+  severity: FindingSeverity,
   additionalMetadata: { [key: string]: string } = {}
 ): Finding {
   const metadata: { [key: string]: string } = {
@@ -42,7 +43,7 @@ export function createCustomAlert(
     name: 'scammer-nft-trader',
     description,
     alertId: name,
-    severity: FindingSeverity.Info,
+    severity: severity,
     type: findingType,
     metadata,
     labels

@@ -110,8 +110,6 @@ export const createBatchContractInfo = (
         consideration
     });
 
-    console.log(SeaPortOrderData);
-
     const currentTimestamp = getCurrentTimestamp();
     const mockEvent = createTransactionEvent(
         {
