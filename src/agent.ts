@@ -185,8 +185,8 @@ const handleTransaction: HandleTransaction = async (
             const addressMatch =
               records[0].transaction.from_address === records[1].transaction.to_address;
               //console.log("first record from_address", records[0].transaction.from_address)
-              console.log("first record to_address", records[0].transaction.to_address)
-              console.log("second record from_address", records[1].transaction.from_address)
+              //console.log("first record to_address", records[0].transaction.to_address)
+              //console.log("second record from_address", records[1].transaction.from_address)
               //console.log("second record to_address", records[1].transaction.to_address)
 
             console.log("----- addressMatch -----", addressMatch)
@@ -202,7 +202,7 @@ const handleTransaction: HandleTransaction = async (
               let alertLabel: Label[] = [];
               let regularSaleExtra = `, for a value of ${(records[0].transaction.avg_item_price).toFixed(4)} ETH where the price floor is ${records[0].transaction.floor_price} ETH`;
 
-              console.log("----- floorDiffs -----", floorDiffs)
+              //console.log("----- floorDiffs -----", floorDiffs)
 
               if(floorDiffs < 0) floorDiffs *= -1;
               if (floorDiffs > 85) {
@@ -320,7 +320,7 @@ const handleTransaction: HandleTransaction = async (
                 let alertLabel: Label[] = [];
                 let floorMessage = record.floorPrice ? `with collection floor of ${record.floorPrice} ${chainCurrency}` : `(no floor price detected)`;
                 let extraInfo = `at ${(record.avgItemPrice).toFixed(4)} ${ chainCurrency} ${floorMessage}`
-                console.log("numericalValue: ", numericalValue)
+                //console.log("numericalValue: ", numericalValue)
 
                 if (numericalValue >= 20) {
                   alert_name = `nft-sold-above-floor-price`;
