@@ -54,6 +54,12 @@ const calculateFloorPriceDiff = (avgItemPrice: number, floorPrice: number | null
   return `${floorPriceDiff >= 0 ? "+" : ""}${floorPriceDiff.toFixed(2)}%`;
 };
 
+function shortenAddress(address: string, digits = 4): string {
+  if (!address) {
+      throw new Error("Invalid address");
+  }
+  return `${address.slice(0, digits + 2)}...${address.slice(-digits)}`;
+}
 
 function compareKeysAndElements(obj: { [key: string]: boolean }, arr: string[]): boolean {
   const keySet = new Set(Object.keys(obj));
@@ -162,7 +168,7 @@ const handleTransaction: HandleTransaction = async (
             // compare the timestamp of the last two records and save the result in minutes
             // Calculate the time difference in minutes
             const timeDifferenceMinutes =
-              (records[0].transaction.timestamp - records[1].transaction.timestamp) / 60;
+              ((records[0].transaction.timestamp - records[1].transaction.timestamp) / 60).toFixed(2);
 
             // Calculate the average item price difference
             const avgItemPriceDifference =
@@ -177,7 +183,12 @@ const handleTransaction: HandleTransaction = async (
 
             // Check if the to_address of the oldest record matches the from_address of the newest record
             const addressMatch =
-              records[0].transaction.to_address === records[1].transaction.from_address;
+              records[0].transaction.from_address === records[1].transaction.to_address;
+              //console.log("first record from_address", records[0].transaction.from_address)
+              console.log("first record to_address", records[0].transaction.to_address)
+              console.log("second record from_address", records[1].transaction.from_address)
+              //console.log("second record to_address", records[1].transaction.to_address)
+
             console.log("----- addressMatch -----", addressMatch)
             if (addressMatch) {
 
@@ -189,13 +200,15 @@ const handleTransaction: HandleTransaction = async (
 
               let alert: Finding;
               let alertLabel: Label[] = [];
-              let regularSaleExtra = `, for a value of ${records[0].transaction.avg_item_price} ETH where the price floor is ${records[0].transaction.floor_price} ETH`;
+              let regularSaleExtra = `, for a value of ${(records[0].transaction.avg_item_price).toFixed(4)} ETH where the price floor is ${records[0].transaction.floor_price} ETH`;
 
               console.log("----- floorDiffs -----", floorDiffs)
+
+              if(floorDiffs < 0) floorDiffs *= -1;
               if (floorDiffs > 85) {
                 let victim = records[1].transaction.from_address;
                 let attacker = records[1].transaction.to_address;
-                let profit = Math.abs(avgItemPriceDifference);
+                let profit = Math.abs(avgItemPriceDifference).toFixed(3);
                 find_description = `${global_name} ${tokenId} sold to ${records[0].transaction.to_address} by ${records[1].transaction.to_address} possibly stolen from ${victim} in ${record.interactedMarket} at ${records[0].transaction.floor_price_diff} of floor after ${timeDifferenceMinutes} minutes for a profit of ${profit} ${chainCurrency}`;
                 findType = FindingType.Exploit;
                 find_name = `nft-phishing-sale`
@@ -222,6 +235,15 @@ const handleTransaction: HandleTransaction = async (
                   entityType: EntityType.Address,
                   entity: `${attacker}`,
                   label: "nft-phishing-attacker",
+                  confidence: 0.8,
+                  remove: false,
+                  metadata: {}
+                })
+
+                alertLabel.push({
+                  entityType: EntityType.Transaction,
+                  entity: `${records[1].transaction.transaction_hash}`,
+                  label: "nft-phishing-attack-hash",
                   confidence: 0.8,
                   remove: false,
                   metadata: {}
@@ -259,7 +281,7 @@ const handleTransaction: HandleTransaction = async (
                 alert.addresses.push(records[0].transaction.to_address);
                 alert.addresses.push(records[0].transaction.from_address);
               }
-              alert.metadata.attackHash = records[0].transaction.transaction_hash;
+              alert.metadata.attackHash = records[1].transaction.transaction_hash;
 
 
               Object.keys(txEvent.addresses).forEach((address: string) => {
@@ -291,13 +313,13 @@ const handleTransaction: HandleTransaction = async (
             if (record.tokens) {
               for (const tokenKey in record.tokens) {
                 const token = record.tokens[tokenKey];
-                const tokenName = token.name ? token.name : record.contractAddress;
+                const tokenName = token.name ? token.name : shortenAddress(record.contractAddress);
                 let alert_description;
                 let alert_name;
                 let alert_severity = FindingSeverity.Info;
                 let alertLabel: Label[] = [];
-                let floorMessage = record.floorPrice ? `with collection floor of ${record.floorPrice} ${chainCurrency}` : ` (no floor price detected)`;
-                let extraInfo = `at ${(record.avgItemPrice).toFixed(3)} ${ chainCurrency} ${floorMessage}`
+                let floorMessage = record.floorPrice ? `with collection floor of ${record.floorPrice} ${chainCurrency}` : `(no floor price detected)`;
+                let extraInfo = `at ${(record.avgItemPrice).toFixed(4)} ${ chainCurrency} ${floorMessage}`
                 console.log("numericalValue: ", numericalValue)
 
                 if (numericalValue >= 20) {

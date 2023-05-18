@@ -11,7 +11,7 @@ import {
 import db from './db';
 import agent from "./agent";
 
-import { getRandomAddress, getRandomTxHash, createBatchContractInfo } from './utils/tests';
+import { getRandomAddress, getRandomTxHash, createBatchContractInfo, wait } from './utils/tests';
 import { addTransactionRecord, getTransactionByHash, getLatestTransactionRecords } from './client';
 import type { MarketName, TransactionRecord } from "./types/types";
 import type { NftContract } from 'alchemy-sdk';
@@ -277,7 +277,7 @@ describe("NFT trader test", () => {
                     }
                 ]
             );
-
+            await wait(1);
 
             // Recipient sells the nft, at 105 with floor of 100
             let saleTxHash = getRandomTxHash();
@@ -366,7 +366,8 @@ describe("NFT trader test", () => {
             );
 
 
-
+            await wait(1);
+            
             // Recipient sells the nft, at 95 with floor of 100
             let saleTxHash = getRandomTxHash();
             let [sellMockApi, sellDemoEvent] = createBatchContractInfo(
@@ -399,7 +400,7 @@ describe("NFT trader test", () => {
                     },
                     {
                         "entityType": 1,
-                        "entity": `${saleFindings[0].metadata.fromAddr}`,
+                        "entity": `${bob}`,
                         "label": "nft-phishing-victim",
                         "confidence": 0.8,
                         "remove": false,
@@ -407,8 +408,16 @@ describe("NFT trader test", () => {
                     },
                     {
                         "entityType": 1,
-                        "entity": `${saleFindings[0].metadata.toAddr}`,
+                        "entity": `${jack}`,
                         "label": "nft-phishing-attacker",
+                        "confidence": 0.8,
+                        "remove": false,
+                        "metadata": {}
+                    },
+                    {
+                        "entityType": 2,
+                        "entity": `${txHash}`,
+                        "label": "nft-phishing-attack-hash",
                         "confidence": 0.8,
                         "remove": false,
                         "metadata": {}

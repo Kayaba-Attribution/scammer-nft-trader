@@ -35,7 +35,7 @@ Describe each of the type of alerts fired by this agent
   - Includes the timestamp floorPriceDiff of the first and second txns
 
 - nft-possible-phishing-transfer
-  - Fired when a previously indexed nft transaction has a value lower than a certain threshold (<-99%)
+  - Fired when a previously indexed nft transaction has a value lower than a certain threshold (<-99% floor || 0)
   - Severity is always set to "Info"
   - Type is always set to "Suspicious" 
     - Includes the labels:
@@ -49,9 +49,10 @@ Describe each of the type of alerts fired by this agent
   - Severity is always set to "Info"
   - Type is always set to "Exploit" 
     - Includes the labels:
-    - nft-phishing-victim     (address)
-    - nft-phishing-attacker   (address)
-    - stolen-nft              (id,address)
+    - nft-phishing-victim      (address)
+    - nft-phishing-attacker    (address)
+    - nft-phishing-attack-hash (hash) 
+    - stolen-nft               (id,address)
   - Includes the address from which the nft was stolen and the profit made by the scammer
 
 ### Alerts Matchers
@@ -69,20 +70,20 @@ Planned:
 
 ## Examples
 
-> Mutant Hound Collars 6262 sold for less than -99% of the floor price
+> Mutant Hound Collars 9911 sold for less than -99% of the floor price, at 0.0002 ETH with collection floor of 0.58 ETH
 ```
 5 findings for transaction 0x4fff109d9a6c030fce4de9426229a113524903f0babd6de11ee6c046d07226ff {
   "name": "scammer-nft-trader",
-  "description": "Mutant Hound Collars 6262 sold for less than -99% of the floor price",
+  "description": "Mutant Hound Collars 9911 sold for less than -99% of the floor price, at 0.0002 ETH with collection floor of 0.58 ETH",
   "alertId": "nft-possible-phishing-transfer",
   "protocol": "ethereum",
-  "severity": "Info",
-  "type": "Suspicious",
+  "severity": "Medium",
+  "type": "Info",
   "metadata": {
     "interactedMarket": "opensea",
     "transactionHash": "0x4fff109d9a6c030fce4de9426229a113524903f0babd6de11ee6c046d07226ff",
-    "toAddr": "0xBF96d79074b269F75c20BD9fa6DAed0773209EE7",
-    "fromAddr": "0x08395C15C21DC3534B1C3b1D4FA5264E5Bd7020C",
+    "toAddr": "0xbf96d79074b269f75c20bd9fa6daed0773209ee7",
+    "fromAddr": "0x08395c15c21dc3534b1c3b1d4fa5264e5bd7020c",
     "initiator": "0xaefc35de05da370f121998b0e2e95698841de9b1",
     "totalPrice": "0.001",
     "avgItemPrice": "0.0002",
@@ -92,8 +93,8 @@ Planned:
     "floorPriceDiff": "-99.97%"
   },
   "addresses": [
-    "0x08395C15C21DC3534B1C3b1D4FA5264E5Bd7020C",
-    "0xBF96d79074b269F75c20BD9fa6DAed0773209EE7",
+    "0x08395c15c21dc3534b1c3b1d4fa5264e5bd7020c",
+    "0xbf96d79074b269f75c20bd9fa6daed0773209ee7",
     "0xaefc35de05da370f121998b0e2e95698841de9b1",
     "0xaefc35de05da370f121998b0e2e95698841de9b1",
     "0x00000000006c3852cbef3e08e8df289169ede581",
@@ -102,7 +103,7 @@ Planned:
   "labels": [
     {
       "entityType": "Address",
-      "entity": "0x08395C15C21DC3534B1C3b1D4FA5264E5Bd7020C",
+      "entity": "0x08395c15c21dc3534b1c3b1d4fa5264e5bd7020c",
       "label": "nft-possible-phishing-victim",
       "confidence": 0.8,
       "remove": false,
@@ -110,7 +111,7 @@ Planned:
     },
     {
       "entityType": "Address",
-      "entity": "0xBF96d79074b269F75c20BD9fa6DAed0773209EE7",
+      "entity": "0xbf96d79074b269f75c20bd9fa6daed0773209ee7",
       "label": "nft-possible-phishing-attacker",
       "confidence": 0.8,
       "remove": false,
@@ -118,25 +119,25 @@ Planned:
     },
     {
       "entityType": "Address",
-      "entity": "6262,0xae99a698156ee8f8d07cbe7f271c31eeaac07087",
+      "entity": "9911,0xae99a698156ee8f8d07cbe7f271c31eeaac07087",
       "label": "nft-possible-phising-transfer",
       "confidence": 0.9,
       "remove": false,
       "metadata": {}
     }
   ]
-},
+}
 ```
 
-> Mutant Hound Collars 6262 sold to 0x679d5162BaD71990ABCA0f18095948c12a2756B0 by 0xBF96d79074b269F75c20BD9fa6DAed0773209EE7 possibly stolen from 0x08395C15C21DC3534B1C3b1D4FA5264E5Bd7020C in opensea at -0.17% of floor after 423.4 minutes for a profit of 0.5788000000000001
+> Mutant Hound Collars 6262 sold to 0x679d5162bad71990abca0f18095948c12a2756b0 by 0xbf96d79074b269f75c20bd9fa6daed0773209ee7 possibly stolen from 0x08395c15c21dc3534b1c3b1d4fa5264e5bd7020c in opensea at -0.17% of floor after 423.40 minutes for a profit of 0.579 ETH, for a value of 0.5790 ETH where the price floor is 0.58 ETH
 
 ```
 1 findings for transaction 0xdc6fd3c2846f330aec65615341789397e1a9bb37a471851fe68b2db20a5a7b9f {
   "name": "scammer-nft-trader",
-  "description": "Mutant Hound Collars 6262 sold to 0x679d5162BaD71990ABCA0f18095948c12a2756B0 by 0xBF96d79074b269F75c20BD9fa6DAed0773209EE7 possibly stolen from 0x08395C15C21DC3534B1C3b1D4FA5264E5Bd7020C in opensea at -0.17% of floor after 423.4 minutes for a profit of 0.5788000000000001",
+  "description": "Mutant Hound Collars 6262 sold to 0x679d5162bad71990abca0f18095948c12a2756b0 by 0xbf96d79074b269f75c20bd9fa6daed0773209ee7 possibly stolen from 0x08395c15c21dc3534b1c3b1d4fa5264e5bd7020c in opensea at -0.17% of floor after 423.40 minutes for a profit of 0.579 ETH, for a value of 0.5790 ETH where the price floor is 0.58 ETH",
   "alertId": "nft-phishing-sale",
   "protocol": "ethereum",
-  "severity": "Info",
+  "severity": "High",
   "type": "Exploit",
   "metadata": {
     "0": {
@@ -151,8 +152,8 @@ Planned:
     },
     "interactedMarket": "opensea",
     "transactionHash": "0xdc6fd3c2846f330aec65615341789397e1a9bb37a471851fe68b2db20a5a7b9f",
-    "toAddr": "0x679d5162BaD71990ABCA0f18095948c12a2756B0",
-    "fromAddr": "0xBF96d79074b269F75c20BD9fa6DAed0773209EE7",
+    "toAddr": "0x679d5162bad71990abca0f18095948c12a2756b0",
+    "fromAddr": "0xbf96d79074b269f75c20bd9fa6daed0773209ee7",
     "initiator": "0x679d5162bad71990abca0f18095948c12a2756b0",
     "totalPrice": "0.5790000000000001",
     "avgItemPrice": "0.5790000000000001",
@@ -160,11 +161,11 @@ Planned:
     "floorPrice": "0.58",
     "timestamp": "1671457439",
     "floorPriceDiff": "-0.17%",
-    "attackHash": "0xdc6fd3c2846f330aec65615341789397e1a9bb37a471851fe68b2db20a5a7b9f"
+    "attackHash": "0x4fff109d9a6c030fce4de9426229a113524903f0babd6de11ee6c046d07226ff"
   },
   "addresses": [
-    "0x08395C15C21DC3534B1C3b1D4FA5264E5Bd7020C",
-    "0xBF96d79074b269F75c20BD9fa6DAed0773209EE7",
+    "0x08395c15c21dc3534b1c3b1d4fa5264e5bd7020c",
+    "0xbf96d79074b269f75c20bd9fa6daed0773209ee7",
     "0x679d5162bad71990abca0f18095948c12a2756b0",
     "0x00000000006c3852cbef3e08e8df289169ede581",
     "0xae99a698156ee8f8d07cbe7f271c31eeaac07087"
@@ -180,7 +181,7 @@ Planned:
     },
     {
       "entityType": "Address",
-      "entity": "0x08395C15C21DC3534B1C3b1D4FA5264E5Bd7020C",
+      "entity": "0x08395c15c21dc3534b1c3b1d4fa5264e5bd7020c",
       "label": "nft-phishing-victim",
       "confidence": 0.8,
       "remove": false,
@@ -188,15 +189,22 @@ Planned:
     },
     {
       "entityType": "Address",
-      "entity": "0xBF96d79074b269F75c20BD9fa6DAed0773209EE7",
+      "entity": "0xbf96d79074b269f75c20bd9fa6daed0773209ee7",
       "label": "nft-phishing-attacker",
+      "confidence": 0.8,
+      "remove": false,
+      "metadata": {}
+    },
+    {
+      "entityType": "Transaction",
+      "entity": "0x4fff109d9a6c030fce4de9426229a113524903f0babd6de11ee6c046d07226ff",
+      "label": "nft-phishing-attack-hash",
       "confidence": 0.8,
       "remove": false,
       "metadata": {}
     }
   ]
 }
-
 ```
 
 ### Database Schema
@@ -286,5 +294,17 @@ npm run tx 0x4fff109d9a6c030fce4de9426229a113524903f0babd6de11ee6c046d07226ff,0x
 
 ## Current Test Suite:
 
-+ Database (add retrieve)
-+ 
++ Database
+  + adds a new record
+  + adds multiple records
+  + check for duplicate hash
+  + save and retrive tx records
+
++ For newly indexed tokens txns
+  + possible phising (0 or <99% floor price sale)
+  + nft sale for >120% (configurable value)
+  + regular sales
+
++ For previosly indexed tokens txns
+  + regular salese (more info)
+  + verified phising transfers

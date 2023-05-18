@@ -9,6 +9,10 @@ import ABI from '../abi/ABI.json';
 
 const iface = new ethers.Interface(ABI);
 
+export function wait(seconds: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, seconds * 1000));
+}
+
 function encodeOrderFulfilledData({ orderHash, offerer, zone, recipient, offer, consideration }: any) {
     const fragment = iface.getEvent('OrderFulfilled');
     if (!fragment) {
