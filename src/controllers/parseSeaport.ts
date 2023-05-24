@@ -159,8 +159,11 @@ function getReducer(
     tx: TransactionData
 ): (previous: number, current: OfferItem | ConsiderationItem) => number {
     return (previous: number, current: OfferItem | ConsiderationItem) => {
+        console.log("Currency address", current.token.toLowerCase())
+        console.log("Currency amount", current.amount)
         const currency =
             currencies[current.token.toLowerCase() as keyof typeof currencies];
+        console.log("Currency", currency)
         if (
             isConsiderationItem(current) &&
             current.token.toLowerCase() === tx.contractAddress.toLowerCase()

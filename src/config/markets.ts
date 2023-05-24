@@ -6,7 +6,9 @@ export type CurrencyAddress =
     | '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'
     | '0x6b175474e89094c44da98b954eedeac495271d0f'
     | '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
-    | '0x4d224452801aced8b2f0aebe155379bb5d594381';
+    | '0x4d224452801aced8b2f0aebe155379bb5d594381'
+    | '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c'
+    | '0x7ceb23fd6bc0add59e62ac25578270cff1b9f619';
 
 export type Currency = {
     [key in CurrencyAddress]: {
@@ -40,7 +42,17 @@ const currencies: Currency = {
     '0x4d224452801aced8b2f0aebe155379bb5d594381': {
         name: 'APE',
         decimals: 18
-    }
+    },
+    // BNB
+    '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c': {
+        name: 'BNB',
+        decimals: 18
+    },
+    // Poly WETH
+    '0x7ceb23fd6bc0add59e62ac25578270cff1b9f619': {
+        name: 'WETH',
+        decimals: 18
+    },
 };
 
 const markets: { [key: string]: Market } = {

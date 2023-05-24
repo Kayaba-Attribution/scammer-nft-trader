@@ -11,7 +11,11 @@ Bad NFT Orders such as phishing are detected, tracked, and labeled.
 ## Supported Chains
 
 - Ethereum
-- List any other chains this agent can support e.g. BSC
+  - OpenSea
+  - LooksRare
+  - Blur
+- BSC && Polygon
+  - OpenSea
 
 ## Alerts
 
@@ -291,6 +295,14 @@ The agent behaviour can be verified with the following transactions:
 - 0xd7dbed24b00aa1ad13070da9221f10b050c1cdaf75f161e9ec5e3582f2450943 Blur
 
 npm run tx 0x4fff109d9a6c030fce4de9426229a113524903f0babd6de11ee6c046d07226ff,0xdc6fd3c2846f330aec65615341789397e1a9bb37a471851fe68b2db20a5a7b9f
+
+BSC OpenSea Trade:
+
+- npm run bsctx 0x67c77755fcb06cec9884382e402b86ca77d3ab4998179653a17dfde85f2ef95f
+
+Polygon OpenSea Trade:
+
+- npm run polytx 0x50b9f159f227ce8bf0f596831adaddad49616537d3f36d1b5533f89d4aa94a50
 
 ## Current Test Suite:
 

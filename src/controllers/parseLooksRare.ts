@@ -47,6 +47,9 @@ const parseLooksRare = (
     }
     const currencyAddr =
         decodedLogData.currency.toLowerCase() as keyof typeof currencies;
+
+    if (!currencyAddr) return;
+    
     const price = Number(
         ethers.formatUnits(
             decodedLogData.price,
