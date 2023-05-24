@@ -9,14 +9,15 @@ import {
   ethers,
   EntityType,
   Label,
-  FindingSeverity
+  FindingSeverity,
+  getEthersProvider
 } from "forta-agent";
 
 import { createCustomAlert } from "./utils/alerts";
 import db, { ALCHEMY_API_KEY } from './db';
 import { addTransactionRecord, getTransactionsByAddress, getTransactionByHash, getLatestTransactionRecords } from './client';
 
-import { Network, Alchemy } from 'alchemy-sdk';
+import { Network, Alchemy, NftTokenType } from 'alchemy-sdk';
 import { transferEventTopics } from "./config/logEventTypes";
 import retry from 'async-retry';
 import type { NftContract } from 'alchemy-sdk';
@@ -56,7 +57,7 @@ const calculateFloorPriceDiff = (avgItemPrice: number, floorPrice: number | null
 
 function shortenAddress(address: string, digits = 4): string {
   if (!address) {
-      throw new Error("Invalid address");
+    throw new Error("Invalid address");
   }
   return `${address.slice(0, digits + 2)}...${address.slice(-digits)}`;
 }
@@ -77,6 +78,8 @@ const handleTransaction: HandleTransaction = async (
   txEvent: TransactionEvent,
   testAPI?: NftContract[]
 ) => {
+  const provider = getEthersProvider();
+  const chainId = (await provider.getNetwork()).chainId;
   const findings: Finding[] = [];
 
   let NFT_RELATED = false;
@@ -94,7 +97,13 @@ const handleTransaction: HandleTransaction = async (
 
   // get all the information for the contracts
   if (!testAPI) {
+    if(chainId === 1) {
     nftContractsData = await getBatchContractData(Object.keys(txEvent.addresses));
+    } else {
+      console.log("Using on-chain data for chainId: ", chainId, "...")
+      nftContractsData = await getBatchContractDataOnChain(Object.keys(txEvent.addresses));
+      chainCurrency = chainId === 56 ? 'BNB' : chainId === 137 ? 'MATIC' : 'ETH';
+    }
   } else {
     console.log("Test Data Loaded")
     nftContractsData = testAPI;
@@ -184,10 +193,10 @@ const handleTransaction: HandleTransaction = async (
             // Check if the to_address of the oldest record matches the from_address of the newest record
             const addressMatch =
               records[0].transaction.from_address === records[1].transaction.to_address;
-              //console.log("first record from_address", records[0].transaction.from_address)
-              //console.log("first record to_address", records[0].transaction.to_address)
-              //console.log("second record from_address", records[1].transaction.from_address)
-              //console.log("second record to_address", records[1].transaction.to_address)
+            //console.log("first record from_address", records[0].transaction.from_address)
+            //console.log("first record to_address", records[0].transaction.to_address)
+            //console.log("second record from_address", records[1].transaction.from_address)
+            //console.log("second record to_address", records[1].transaction.to_address)
 
             console.log("----- addressMatch -----", addressMatch)
             if (addressMatch) {
@@ -204,7 +213,7 @@ const handleTransaction: HandleTransaction = async (
 
               //console.log("----- floorDiffs -----", floorDiffs)
 
-              if(floorDiffs < 0) floorDiffs *= -1;
+              if (floorDiffs < 0) floorDiffs *= -1;
               if (floorDiffs > 85) {
                 let victim = records[1].transaction.from_address;
                 let attacker = records[1].transaction.to_address;
@@ -255,6 +264,7 @@ const handleTransaction: HandleTransaction = async (
                   find_name,
                   findType,
                   FindingSeverity.High,
+                  chainId,
                   floorPriceDiffs
                 );
 
@@ -267,6 +277,7 @@ const handleTransaction: HandleTransaction = async (
                   find_name,
                   findType,
                   FindingSeverity.Info,
+                  chainId,
                   floorPriceDiffs
                 );
                 alertLabel.push({
@@ -292,7 +303,7 @@ const handleTransaction: HandleTransaction = async (
                 alert.labels.push(label);
               }
 
-              
+
 
               findings.push(alert);
             }
@@ -319,7 +330,7 @@ const handleTransaction: HandleTransaction = async (
                 let alert_severity = FindingSeverity.Info;
                 let alertLabel: Label[] = [];
                 let floorMessage = record.floorPrice ? `with collection floor of ${record.floorPrice} ${chainCurrency}` : `(no floor price detected)`;
-                let extraInfo = `at ${(record.avgItemPrice).toFixed(4)} ${ chainCurrency} ${floorMessage}`
+                let extraInfo = `at ${(record.avgItemPrice).toFixed(4)} ${chainCurrency} ${floorMessage}`
                 //console.log("numericalValue: ", numericalValue)
 
                 if (numericalValue >= 20) {
@@ -389,7 +400,8 @@ const handleTransaction: HandleTransaction = async (
                   alert_description,
                   alert_name,
                   FindingType.Info,
-                  alert_severity
+                  alert_severity,
+                  chainId
                 );
 
                 alert.addresses.push(record.fromAddr!);
@@ -436,6 +448,76 @@ const initialize: Initialize = async () => {
 
 }
 
+
+
+const getBatchContractDataOnChain = async (contractAddresses: string[]): Promise<NftContract[]> => {
+
+  const ERC721_ABI = [
+    "function name() view returns (string)",
+    "function symbol() view returns (string)",
+    "function supportsInterface(bytes4) view returns (bool)"
+  ];
+
+  const ERC1155_ABI = [
+    "function name() view returns (string)",
+    "function symbol() view returns (string)",
+    "function supportsInterface(bytes4) view returns (bool)"
+  ];
+
+  const ERC721_INTERFACE_ID = '0x80ac58cd';
+  const ERC1155_INTERFACE_ID = '0xd9b67a26';
+
+  const provider = getEthersProvider();
+
+  let data: NftContract[] = [];
+
+  for (const address of contractAddresses) {
+
+    const erc721Contract = new ethers.Contract(address, ERC721_ABI, provider);
+    const erc1155Contract = new ethers.Contract(address, ERC1155_ABI, provider);
+
+    let isErc721, isErc1155;
+
+    try {
+      isErc721 = await erc721Contract.supportsInterface(ERC721_INTERFACE_ID);
+    } catch (error) {
+      isErc721 = false;
+    }
+
+    try {
+      isErc1155 = await erc1155Contract.supportsInterface(ERC1155_INTERFACE_ID);
+    } catch (error) {
+      isErc1155 = false;
+    }
+
+    if (isErc721) {
+      const name = await erc721Contract.name();
+      const symbol = await erc721Contract.symbol();
+      data.push({
+        name: name,
+        symbol: symbol,
+        tokenType: NftTokenType.ERC721,
+        address: address
+      })
+    }
+
+    if (isErc1155) {
+      const name = await erc1155Contract.name();
+      const symbol = await erc1155Contract.symbol();
+      data.push({
+        name: name,
+        symbol: symbol,
+        tokenType: NftTokenType.ERC1155,
+        address: address
+      })
+    }
+
+  }
+
+  return data;
+
+}
+
 const getBatchContractData = async (contractAddresses: string[]): Promise<NftContract[]> => {
   // Alchemy sdk setup
   const settings = {
@@ -444,7 +526,7 @@ const getBatchContractData = async (contractAddresses: string[]): Promise<NftCon
   };
 
   const alchemy = new Alchemy(settings);
-  const provider = new ethers.providers.AlchemyProvider('homestead', ALCHEMY_API_KEY);
+  //const provider = new ethers.providers.AlchemyProvider('homestead', ALCHEMY_API_KEY);
 
   const result = await retry(
     async () => {
@@ -460,7 +542,6 @@ const getBatchContractData = async (contractAddresses: string[]): Promise<NftCon
       retries: 5
     }
   );
-  //console.log(result)
   return result;
 };
 

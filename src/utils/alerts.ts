@@ -7,6 +7,7 @@ export function createCustomAlert(
   name: string,
   findingType: FindingType,
   severity: FindingSeverity,
+  chainId: number,
   additionalMetadata: { [key: string]: string } = {}
 ): Finding {
   const metadata: { [key: string]: string } = {
@@ -38,6 +39,9 @@ export function createCustomAlert(
     // })
   }
 
+  let protocol_name = 'ethereum';
+  if (chainId === 56) protocol_name = 'bsc';
+  if (chainId === 137) protocol_name = 'polygon';
 
   const findingInput = {
     name: 'scammer-nft-trader',
@@ -46,7 +50,8 @@ export function createCustomAlert(
     severity: severity,
     type: findingType,
     metadata,
-    labels
+    labels,
+    protocol: protocol_name
   };
   //console.log('findingInput', findingInput);
   return Finding.from(findingInput);

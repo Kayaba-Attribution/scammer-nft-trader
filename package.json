@@ -4,7 +4,9 @@
   "description": "Index NFT trades and detect scammer accounts. Supports OpenSea, LooksRare and Blur",
   "repository": "https://github.com/Kayaba-Attribution/scammer-nft-trader",
   "chainIds": [
-    1
+    1,
+    56,
+    137
   ],
   "scripts": {
     "build": "tsc",
@@ -12,6 +14,8 @@
     "start:dev": "nodemon --watch src --watch forta.config.json -e js,ts,json  --exec \"npm run build && forta-agent run\"",
     "start:prod": "forta-agent run --prod",
     "tx": "npm run build && forta-agent run --tx",
+    "bsctx": "npm run build && forta-agent run --config bsc.config.json --tx",
+    "polytx": "npm run build && forta-agent run --config poly.config.json --tx",
     "block": "npm run build && forta-agent run --block",
     "range": "npm run build && forta-agent run --range",
     "alert": "npm run build && forta-agent run --alert",
@@ -32,6 +36,7 @@
     "body-parser": "^1.20.2",
     "ethers": "^6.3.0",
     "forta-agent": "^0.1.30",
+    "opensea-js": "^5.0.2",
     "sqlite3": "^5.1.6",
     "web3-eth-abi": "^1.9.0"
   },
@@ -50,3 +55,4 @@
     "typescript": "^4.9.5"
   }
 }
+
