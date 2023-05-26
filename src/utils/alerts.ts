@@ -26,7 +26,7 @@ export function createCustomAlert(
   };
 
   const labels: Label[] = [];
-  
+
   for (const tokenId in record.tokens) {
     const token = record.tokens[tokenId];
     // labels.push({
@@ -43,9 +43,24 @@ export function createCustomAlert(
   if (chainId === 56) protocol_name = 'bsc';
   if (chainId === 137) protocol_name = 'polygon';
 
+  let market;
+  switch (metadata.interactedMarket) {
+    case 'blur' || 'blurswap':
+      market = 'on Blur 🟠';
+      break;
+    case 'opensea':
+      market = 'on Opensea 🌊';
+      break;
+    case 'looksrare':
+      market = 'on LooksRare 👀💎';
+      break;
+    default:
+      break;
+  }
+
   const findingInput = {
     name: 'scammer-nft-trader',
-    description,
+    description: market ? `${description} ${market}` : description,
     alertId: name,
     severity: severity,
     type: findingType,

@@ -3,6 +3,7 @@ import { setTokenData } from '../utils/helper';
 
 import type { Log, Interface } from 'ethers';
 import type { Market, TransactionData } from '../types';
+import { NftContract } from 'alchemy-sdk';
 
 
 const SafeCollectionBidPolicyERC721 =
@@ -19,12 +20,14 @@ const SafeCollectionBidPolicyERC721 =
  * @param {Log} log - The log event object containing information about the transaction.
  * @param {Market} market - The market object containing market-specific data.
  * @param {Interface} iface - The interface object for the market contract.
+ * @param {NftContract} contractData - The contract data object for the market contract.
  **/
 const parseBlur = (
     tx: TransactionData,
     log: any,
     market: Market,
-    iface: Interface
+    iface: Interface,
+    contractData: NftContract
 ) => {
 
     const decodedLogData = iface.parseLog({
@@ -58,6 +61,7 @@ const parseBlur = (
     tx.totalAmount += amount;
 
     setTokenData({
+        name: contractData.name,
         tokens: tx.tokens,
         tokenId: tokenId,
         price: price,

@@ -448,6 +448,11 @@ const initialize: Initialize = async () => {
 
 }
 
+const getName = async (provider: ethers.providers.Provider, address: string): Promise<string> => {
+  const erc721Contract = new ethers.Contract(address, ["function name() view returns (string)"], provider);
+  const name = await erc721Contract.name();
+  return name;
+}
 
 
 const getBatchContractDataOnChain = async (contractAddresses: string[]): Promise<NftContract[]> => {
