@@ -184,11 +184,15 @@ const handleTransaction: HandleTransaction = async (
               records[0].transaction.avg_item_price - records[1].transaction.avg_item_price;
 
             // Calculate the profit/loss percentage
-            const floorPriceDiffs = records.map((record: any) => ({
-              timestamp: record.transaction.timestamp,
-              floorPriceDiff: record.transaction.floor_price_diff,
-              avgItemPrice: record.transaction.avg_item_price
-            }));
+            const floorPriceDiffs = records.slice(0, 2).reduce((acc: any, record: any, index: number) => {
+              const key = index === 0 ? 'current sale' : 'last sale';
+              acc[key] = {
+                timestamp: record.transaction.timestamp,
+                floorPriceDiff: record.transaction.floor_price_diff,
+                avgItemPrice: record.transaction.avg_item_price
+              };
+              return acc;
+            }, {});
 
             // Check if the to_address of the oldest record matches the from_address of the newest record
             const addressMatch =
@@ -200,21 +204,21 @@ const handleTransaction: HandleTransaction = async (
 
             console.log("----- addressMatch -----", addressMatch)
             if (addressMatch) {
+              let lastSaleFloorPrice = extractNumericalValue(floorPriceDiffs['last sale'].floorPriceDiff);
 
               let find_description = `${global_name ? global_name : record.contractAddress} ${tokenId} sold to ${records[0].transaction.to_address} by ${records[1].transaction.to_address} in ${record.interactedMarket} at ${records[0].transaction.floor_price_diff} of floor after ${timeDifferenceMinutes} minutes`;
               let findType: FindingType = FindingType.Info;
               let find_name = `indexed-nft-sale`
-              let floorDiffs = Math.abs(extractNumericalValue(floorPriceDiffs[0].floorPriceDiff)) - Math.abs(extractNumericalValue(floorPriceDiffs[1].floorPriceDiff))
-
+              let floorDiffs = Math.abs(extractNumericalValue(floorPriceDiffs['current sale'].floorPriceDiff)) - Math.abs(lastSaleFloorPrice)
 
               let alert: Finding;
               let alertLabel: Label[] = [];
               let regularSaleExtra = `, for a value of ${(records[0].transaction.avg_item_price).toFixed(4)} ETH where the price floor is ${records[0].transaction.floor_price} ETH`;
 
-              //console.log("----- floorDiffs -----", floorDiffs)
+              console.log("----- floorDiffs -----", floorDiffs, lastSaleFloorPrice)
 
               if (floorDiffs < 0) floorDiffs *= -1;
-              if (floorDiffs > 85) {
+              if (floorDiffs > 85 && lastSaleFloorPrice <= -98) {
                 let victim = records[1].transaction.from_address;
                 let attacker = records[1].transaction.to_address;
                 let profit = Math.abs(avgItemPriceDifference).toFixed(3);

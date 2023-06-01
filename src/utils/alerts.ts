@@ -46,13 +46,13 @@ export function createCustomAlert(
   let market;
   switch (metadata.interactedMarket) {
     case 'blur' || 'blurswap':
-      market = 'on Blur 🟠';
+      market = 'Blur 🟠';
       break;
     case 'opensea':
-      market = 'on Opensea 🌊';
+      market = 'Opensea 🌊';
       break;
     case 'looksrare':
-      market = 'on LooksRare 👀💎';
+      market = 'LooksRare 👀💎';
       break;
     default:
       break;
@@ -60,7 +60,7 @@ export function createCustomAlert(
 
   const findingInput = {
     name: 'scammer-nft-trader',
-    description: market ? `${description} ${market}` : description,
+    description: market ? `[${market}] ${description}` : description,
     alertId: name,
     severity: severity,
     type: findingType,
