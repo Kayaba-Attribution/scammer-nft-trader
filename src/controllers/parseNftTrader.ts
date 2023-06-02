@@ -110,6 +110,7 @@ const parseNftTrader = (
         }
     });
     tx.swap.taker.spentAmount = formatPrice(takerSpentAmount);
+    console.log(JSON.stringify(tx, null, 2));
 };
 
 export { parseNftTrader };

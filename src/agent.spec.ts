@@ -177,7 +177,7 @@ describe("NFT trader test", () => {
                     {
                         "entityType": 1,
                         "entity": `${findings[0].metadata.fromAddr}`,
-                        "label": "nft-possible-phishing-victim",
+                        "label": "nft-phishing-victim",
                         "confidence": 0.8,
                         "remove": false,
                         "metadata": {}
@@ -185,7 +185,7 @@ describe("NFT trader test", () => {
                     {
                         "entityType": 1,
                         "entity": `${findings[0].metadata.toAddr}`,
-                        "label": "nft-possible-phishing-attacker",
+                        "label": "nft-phishing-attacker",
                         "confidence": 0.8,
                         "remove": false,
                         "metadata": {}
@@ -193,7 +193,7 @@ describe("NFT trader test", () => {
                     {
                         "entityType": 1,
                         "entity": `1,${randomContract}`,
-                        "label": "nft-possible-phising-transfer",
+                        "label": "nft-phising-transfer",
                         "confidence": 0.9,
                         "remove": false,
                         "metadata": {}
@@ -341,7 +341,7 @@ describe("NFT trader test", () => {
                     {
                         "entityType": 1,
                         "entity": `${findings[0].metadata.fromAddr}`,
-                        "label": "nft-possible-phishing-victim",
+                        "label": "nft-phishing-victim",
                         "confidence": 0.8,
                         "remove": false,
                         "metadata": {}
@@ -349,7 +349,7 @@ describe("NFT trader test", () => {
                     {
                         "entityType": 1,
                         "entity": `${findings[0].metadata.toAddr}`,
-                        "label": "nft-possible-phishing-attacker",
+                        "label": "nft-phishing-attacker",
                         "confidence": 0.8,
                         "remove": false,
                         "metadata": {}
@@ -357,7 +357,7 @@ describe("NFT trader test", () => {
                     {
                         "entityType": 1,
                         "entity": `1234,${randomContract}`,
-                        "label": "nft-possible-phising-transfer",
+                        "label": "nft-phising-transfer",
                         "confidence": 0.9,
                         "remove": false,
                         "metadata": {}

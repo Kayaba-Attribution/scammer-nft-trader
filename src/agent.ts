@@ -224,7 +224,7 @@ const handleTransaction: HandleTransaction = async (
                 let profit = Math.abs(avgItemPriceDifference).toFixed(3);
                 find_description = `${global_name} ${tokenId} sold to ${records[0].transaction.to_address} by ${records[1].transaction.to_address} possibly stolen from ${victim} in ${record.interactedMarket} at ${records[0].transaction.floor_price_diff} of floor after ${timeDifferenceMinutes} minutes for a profit of ${profit} ${chainCurrency}`;
                 findType = FindingType.Exploit;
-                find_name = `nft-phishing-sale`
+                find_name = `stolen-nft-sale`
 
                 alertLabel.push({
                   entityType: EntityType.Address,
@@ -331,6 +331,7 @@ const handleTransaction: HandleTransaction = async (
                 const tokenName = token.name ? token.name : shortenAddress(record.contractAddress);
                 let alert_description;
                 let alert_name;
+                let alert_type: FindingType = FindingType.Info;
                 let alert_severity = FindingSeverity.Info;
                 let alertLabel: Label[] = [];
                 let floorMessage = record.floorPrice ? `with collection floor of ${record.floorPrice} ${chainCurrency}` : `(no floor price detected)`;
@@ -350,12 +351,13 @@ const handleTransaction: HandleTransaction = async (
                   })
                 } else if (numericalValue >= -100 && numericalValue <= -98) {
                   alert_severity = FindingSeverity.Medium;
-                  alert_name = `nft-possible-phishing-transfer`;
+                  alert_type = FindingType.Suspicious;
+                  alert_name = `nft-phishing-sale`;
                   alert_description = `${tokenName} ${tokenKey} sold for less than -99% of the floor price, ${extraInfo}`;
                   alertLabel.push({
                     entityType: EntityType.Address,
                     entity: `${record.fromAddr}`,
-                    label: "nft-possible-phishing-victim",
+                    label: "nft-phishing-victim",
                     confidence: 0.8,
                     remove: false,
                     metadata: {}
@@ -364,7 +366,7 @@ const handleTransaction: HandleTransaction = async (
                   alertLabel.push({
                     entityType: EntityType.Address,
                     entity: `${record.toAddr}`,
-                    label: "nft-possible-phishing-attacker",
+                    label: "nft-phishing-attacker",
                     confidence: 0.8,
                     remove: false,
                     metadata: {}
@@ -373,7 +375,7 @@ const handleTransaction: HandleTransaction = async (
                   alertLabel.push({
                     entityType: EntityType.Address,
                     entity: `${tokenKey},${record.contractAddress}`,
-                    label: "nft-possible-phising-transfer",
+                    label: "nft-phising-transfer",
                     confidence: 0.9,
                     remove: false,
                     metadata: {}
@@ -403,7 +405,7 @@ const handleTransaction: HandleTransaction = async (
                   record,
                   alert_description,
                   alert_name,
-                  FindingType.Info,
+                  alert_type,
                   alert_severity,
                   chainId
                 );
