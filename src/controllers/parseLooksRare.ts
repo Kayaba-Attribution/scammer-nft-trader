@@ -24,13 +24,19 @@ const parseLooksRare = (
     iface: Interface
 ) => {
     const eventTypes = {
-        '0x95fb6205e23ff6bda16a2d1dba56b9ad7c783f67c96fa149785052f47696f2be':
+        '0x3ee3de4684413690dee6fff1a0a4f92916a1b97d1c5a83cdf24671844306b2e3':
             'takerBid',
         '0x68cd251d4d267c6e2034ff0088b990352b97b2002c0476587d0c4da889c11330':
             'takerAsk'
     };
+
+    /**
+     * executeMultipleTakerBids
+     * executeTakerBid
+     */
     const abiCoder = iface.getAbiCoder();
     const eventType = eventTypes[log.topics[0] as keyof typeof eventTypes];
+    console.log(eventType)
     const decodedLogData = iface.parseLog({
         data: log.data,
         topics: [...log.topics]
@@ -41,7 +47,6 @@ const parseLooksRare = (
         return;
     }
 
-
     if (decodedLogData.collection.toLowerCase() !== tx.contractAddress) {
         return;
     }
@@ -49,26 +54,29 @@ const parseLooksRare = (
         decodedLogData.currency.toLowerCase() as keyof typeof currencies;
 
     if (!currencyAddr) return;
-    
+
+    let priceRaw = decodedLogData.feeAmounts[0] + decodedLogData.feeAmounts[2];
+
+
     const price = Number(
         ethers.formatUnits(
-            decodedLogData.price,
+            priceRaw,
             currencies[currencyAddr].decimals
         )
     );
-    const tokenId = decodedLogData.tokenId;
-    const amount = parseInt(decodedLogData.amount);
+
+    const tokenId = parseInt(decodedLogData.itemIds[0]);
+    const amount = parseInt(decodedLogData.amounts[0]);
     const [from, to] = eventType === 'takerBid' ? [2, 1] : [1, 2];
 
-    tx.fromAddr = abiCoder.decode(['address'], log.topics[from]).toString();
-    tx.toAddr = abiCoder.decode(['address'], log.topics[to]).toString();
-
+    tx.fromAddr = decodedLogData.feeRecipients[0].toString();
+    tx.toAddr = decodedLogData.bidRecipient.toString();
     tx.totalPrice += price;
-    tx.totalAmount += parseInt(decodedLogData.amount);
+    tx.totalAmount += amount;
 
     setTokenData({
         tokens: tx.tokens,
-        tokenId: tokenId,
+        tokenId: String(tokenId),
         price: price,
         amount: amount,
         market: market,

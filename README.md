@@ -14,7 +14,8 @@ Bad NFT Orders such as phishing are detected, tracked, and labeled.
   - OpenSea
   - LooksRare
   - Blur
-- BSC && Polygon
+
+- Optimism, BSC, Polygon, Fantom, Arbitrum, Avalanche
   - OpenSea
 
 ## Alerts

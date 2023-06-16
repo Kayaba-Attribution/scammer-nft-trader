@@ -156,8 +156,8 @@ const handleTransaction: HandleTransaction = async (
             }
           }
 
-          console.log("----- record -----")
-          console.log(JSON.stringify(record, null, 4));
+          console.log("[record status]", record ? "found" : "not found")
+          //console.log(JSON.stringify(record, null, 4));
 
           await addTransactionRecord(db, record);
           let t: any = await getTransactionByHash(db, txEvent.hash);
@@ -169,8 +169,7 @@ const handleTransaction: HandleTransaction = async (
           //console.log("----- Accesed record on db by hash ----- \n\n")
           //console.log(t)
 
-          console.log("----- Accesed records on db by contract and tokenId (more recent 2) -----")
-          console.log(records)
+          console.log("[record by id status]", records ? `found (${records.length})` : "err")
           let global_name = record.tokens[tokenId].name ? record.tokens[tokenId].name : record.contractAddress
 
           if (records.length > 1) {

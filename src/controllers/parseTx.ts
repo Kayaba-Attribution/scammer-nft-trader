@@ -35,7 +35,7 @@ async function transferIndexer(
         return;
     }
     const tx = initializeTransactionData(transactionHash, contractData, recipient, contractAddress);
-    console.log("tx", tx)
+    //console.log("tx", tx)
     //const isSudoswap = tx.interactedMarket.name === 'sudoswap';
     const iface = new ethers.Interface(ABI);
 

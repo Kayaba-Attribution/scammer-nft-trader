@@ -179,10 +179,10 @@ const markets: { [key: string]: Market } = {
         ]
     },
     // LooksRareExchange Contract Address
-    '0x59728544b08ab483533076417fbbb2fd0b17ce3a': {
+    '0x0000000000e655fae4d56241588680f86e3b2377': {
         name: 'looksrare',
         displayName: 'LooksRare 👀💎',
-        contract: '0x59728544b08ab483533076417fbbb2fd0b17ce3a',
+        contract: '0x0000000000e655fae4d56241588680f86e3b2377',
         color: 844901,
         site: 'https://looksrare.org/collections/',
         accountPage: 'https://looksrare.org/accounts/',
@@ -190,7 +190,8 @@ const markets: { [key: string]: Market } = {
             'https://pbs.twimg.com/profile_images/1607554816049545216/WbL9E92K_400x400.jpg',
         topics: [
             '0x95fb6205e23ff6bda16a2d1dba56b9ad7c783f67c96fa149785052f47696f2be',
-            '0x68cd251d4d267c6e2034ff0088b990352b97b2002c0476587d0c4da889c11330'
+            '0x68cd251d4d267c6e2034ff0088b990352b97b2002c0476587d0c4da889c11330',
+            '0x3ee3de4684413690dee6fff1a0a4f92916a1b97d1c5a83cdf24671844306b2e3'
         ]
     },
     // Opensea Seaport Protocol Contract Address
@@ -212,6 +213,20 @@ const markets: { [key: string]: Market } = {
         name: 'opensea',
         displayName: 'Opensea 🌊',
         contract: '0x00000000000001ad428e4906ae43d8f9852d0dd6',
+        color: 2130402,
+        site: 'https://opensea.io/assets/',
+        accountPage: 'https://opensea.io/',
+        iconURL:
+            'https://pbs.twimg.com/profile_images/1544105652330631168/ZuvjfGkT_400x400.png',
+        topics: [
+            '0x9d9af8e38d66c62e2c12f0225249fd9d721c54b83f48d9352c97c6cacdcb6f31'
+        ]
+    },
+    // Seaport 1.5
+    '0x00000000000000adc04c56bf30ac9d3c0aaf14dc': {
+        name: 'opensea',
+        displayName: 'Opensea 🌊',
+        contract: '0x00000000000000adc04c56bf30ac9d3c0aaf14dc',
         color: 2130402,
         site: 'https://opensea.io/assets/',
         accountPage: 'https://opensea.io/',
