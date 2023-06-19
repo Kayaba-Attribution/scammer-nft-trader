@@ -10,11 +10,18 @@ import {
   EntityType,
   Label,
   FindingSeverity,
-  getEthersProvider
+  getEthersProvider,
+  getChainId
 } from "forta-agent";
 
 import { createCustomAlert } from "./utils/alerts";
-import db, { ALCHEMY_API_KEY } from './db';
+import db, {
+  ALCHEMY_API_KEY,
+  ALCHEMY_API_KEY_POLY,
+  ALCHEMY_API_KEY_OPT,
+  ALCHEMY_API_KEY_ARB
+
+} from './db';
 import { addTransactionRecord, getTransactionsByAddress, getTransactionByHash, getLatestTransactionRecords } from './client';
 
 import { Network, Alchemy, NftTokenType } from 'alchemy-sdk';
@@ -26,6 +33,7 @@ import { transferIndexer } from './controllers/parseTx.js';
 import type { TransactionRecord, TransactionData } from './types/types.js';
 import { markets } from './config/markets';
 import { getCurrentTimestamp } from "./utils/tests";
+import { set } from "lodash";
 
 
 
@@ -95,15 +103,16 @@ const handleTransaction: HandleTransaction = async (
     return findings;
   }
 
+  const alchemySupportedChains = new Set<number>([1, 137, 42161]);
   // get all the information for the contracts
   if (!testAPI) {
-    if(chainId === 1) {
-    nftContractsData = await getBatchContractData(Object.keys(txEvent.addresses));
+    if (alchemySupportedChains.has(chainId)) {
+      nftContractsData = await getBatchContractData(Object.keys(txEvent.addresses), chainId);
     } else {
       console.log("Using on-chain data for chainId: ", chainId, "...")
       nftContractsData = await getBatchContractDataOnChain(Object.keys(txEvent.addresses));
-      chainCurrency = chainId === 56 ? 'BNB' : chainId === 137 ? 'MATIC' : 'ETH';
     }
+    chainCurrency = chainId === 56 ? 'BNB' : chainId === 137 ? 'MATIC' : 'ETH';
   } else {
     console.log("Test Data Loaded")
     nftContractsData = testAPI;
@@ -528,15 +537,33 @@ const getBatchContractDataOnChain = async (contractAddresses: string[]): Promise
 
 }
 
-const getBatchContractData = async (contractAddresses: string[]): Promise<NftContract[]> => {
+const getBatchContractData = async (contractAddresses: string[], chainId?: number): Promise<NftContract[]> => {
   // Alchemy sdk setup
-  const settings = {
-    apiKey: ALCHEMY_API_KEY,
+  let settings = {
+    apiKey: '',
     network: Network.ETH_MAINNET
   };
 
+  switch (chainId) {
+    case 10:
+      settings.apiKey = ALCHEMY_API_KEY_OPT;
+      settings.network = Network.OPT_MAINNET;
+      break;
+    case 137:
+      settings.apiKey = ALCHEMY_API_KEY_POLY;
+      settings.network = Network.MATIC_MAINNET;
+      break;
+    case 42161:
+      settings.apiKey = ALCHEMY_API_KEY_ARB;
+      settings.network = Network.ARB_MAINNET;
+      break;
+    default:
+      settings.apiKey = ALCHEMY_API_KEY;
+      settings.network = Network.ETH_MAINNET;
+      break;
+  }
+
   const alchemy = new Alchemy(settings);
-  //const provider = new ethers.providers.AlchemyProvider('homestead', ALCHEMY_API_KEY);
 
   const result = await retry(
     async () => {
@@ -552,6 +579,7 @@ const getBatchContractData = async (contractAddresses: string[]): Promise<NftCon
       retries: 5
     }
   );
+  console.log(result)
   return result;
 };
 

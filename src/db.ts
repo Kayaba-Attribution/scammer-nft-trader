@@ -176,3 +176,6 @@ const db = new sqlite3.Database(':memory:', (err) => {
 
 export default db;
 export const ALCHEMY_API_KEY = 'q6jyPr4ddtxFpaR-ZdgvxxLiVc2mAg-2';
+export const ALCHEMY_API_KEY_POLY = 'JlkR6-97eaA4AfmvM_xu1YBMFpn305JJ';
+export const ALCHEMY_API_KEY_OPT = 'RMc294FEWCKvceDUt7T6UbRiMSdcNEgr';
+export const ALCHEMY_API_KEY_ARB = '7vn1lDh8j-NNjAwiYtjgAWJn_lRJnuHq';
