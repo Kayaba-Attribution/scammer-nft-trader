@@ -151,7 +151,7 @@ const handleTransaction: HandleTransaction = async (
             }
 
             record.tokens[token] = {
-              name: find.tokens[token].name,
+              name: find.tokens[token].name ? find.tokens[token].name : info.name!,
               price: _price,
             }
           }
@@ -389,7 +389,7 @@ const handleTransaction: HandleTransaction = async (
                   let currencyType;
                   //let currencyType = find && tokenKey && find.tokens[tokenKey] ? find.tokens[tokenKey].markets!.price.currency.name : chainCurrency;
                   alert_name = `nft-sale`;
-                  alert_description = `${tokenName} id ${tokenKey} sold at ${(record.avgItemPrice).toFixed(3)} ${currencyType || chainCurrency} ${floorMessage}`;
+                  alert_description = `${tokenName} id ${tokenKey} sold at ${(record.avgItemPrice).toFixed(3)} ${currencyType || chainCurrency} ${floorMessage} (${record.floorPriceDiff})`;
                   alertLabel.push({
                     entityType: EntityType.Address,
                     entity: `${tokenKey},${record.contractAddress}`,
