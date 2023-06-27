@@ -191,7 +191,8 @@ const markets: { [key: string]: Market } = {
         topics: [
             '0x95fb6205e23ff6bda16a2d1dba56b9ad7c783f67c96fa149785052f47696f2be',
             '0x68cd251d4d267c6e2034ff0088b990352b97b2002c0476587d0c4da889c11330',
-            '0x3ee3de4684413690dee6fff1a0a4f92916a1b97d1c5a83cdf24671844306b2e3'
+            '0x3ee3de4684413690dee6fff1a0a4f92916a1b97d1c5a83cdf24671844306b2e3',
+            '0x9aaa45d6db2ef74ead0751ea9113263d1dec1b50cea05f0ca2002cb8063564a4'
         ]
     },
     // Opensea Seaport Protocol Contract Address

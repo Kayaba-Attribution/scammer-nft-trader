@@ -11,7 +11,9 @@ import {
   Label,
   FindingSeverity,
   getEthersProvider,
-  getChainId
+  getChainId,
+  Log,
+
 } from "forta-agent";
 
 import { createCustomAlert } from "./utils/alerts";
@@ -30,10 +32,11 @@ import retry from 'async-retry';
 import type { NftContract } from 'alchemy-sdk';
 import { transferIndexer } from './controllers/parseTx.js';
 
-import type { TransactionRecord, TransactionData } from './types/types.js';
-import { markets } from './config/markets';
+import type { TransactionRecord, TransactionData, TokenInfo } from './types/types.js';
+import { markets, currencies } from './config/markets';
 import { getCurrentTimestamp } from "./utils/tests";
-import { set } from "lodash";
+import { forEach, round, set } from "lodash";
+import { AbiCoder } from "ethers";
 
 
 
@@ -82,6 +85,48 @@ function compareKeysAndElements(obj: { [key: string]: boolean }, arr: string[]):
   return false;
 }
 
+
+async function extractTransferInfo(log: Log): Promise<{ value: string, name: string, decimals: number } | null> {
+  const { address, topics, data } = log;
+
+  if (currencies.hasOwnProperty(address)){
+    return null;
+  }
+
+  const defaultAbiCoder = new ethers.utils.AbiCoder();
+  const sender = defaultAbiCoder.decode(["address"], topics[1]);
+  const receiver = defaultAbiCoder.decode(["address"], topics[2]);
+  let decimalData = parseInt(data, 16);
+
+  const ERC20_ABI = [
+    "function name() view returns (string)",
+    "function symbol() view returns (string)",
+    "function decimals() view returns (uint8)",
+  ];
+
+  const provider = getEthersProvider();
+
+  const erc20Contract = new ethers.Contract(address, ERC20_ABI, provider);
+
+  if (decimalData && sender && receiver) {
+    //const name: string = await erc20Contract.name();
+    const symbol: string = await erc20Contract.symbol();
+    const decimals = await erc20Contract.decimals();
+    decimalData = decimalData / 10 ** decimals;
+
+    const transferInfo = {
+      value: String(decimalData),
+      name: symbol,
+      decimals: decimals,
+    };
+
+    return transferInfo;
+  }
+
+  return null;
+}
+
+
 const handleTransaction: HandleTransaction = async (
   txEvent: TransactionEvent,
   testAPI?: NftContract[]
@@ -89,8 +134,12 @@ const handleTransaction: HandleTransaction = async (
   const provider = getEthersProvider();
   const chainId = (await provider.getNetwork()).chainId;
   const findings: Finding[] = [];
+  const extraERC20: { value: string, name: string, decimals: number }[] = [];
+  let currencyType;
 
   let NFT_RELATED = false;
+
+
   for (const log of txEvent.logs) {
     if (transferEventTopics.ERC721 === log.topics[0] || transferEventTopics.ERC1155.includes(log.topics[0])) {
       NFT_RELATED = true;
@@ -102,6 +151,14 @@ const handleTransaction: HandleTransaction = async (
     console.log(txEvent.hash, "is not agent related")
     return findings;
   }
+
+  for (const log of txEvent.logs) {
+    if (log.topics.includes(transferEventTopics.ERC20)) {
+      let res = await extractTransferInfo(log)
+      if (res) extraERC20.push(res)
+    }
+  }
+
 
   const alchemySupportedChains = new Set<number>([1, 137, 42161]);
   // get all the information for the contracts
@@ -163,10 +220,37 @@ const handleTransaction: HandleTransaction = async (
               name: find.tokens[token].name ? find.tokens[token].name : info.name!,
               price: _price,
             }
+            currencyType = find.tokens[token].name
+          }
+
+          for (const extraToken of extraERC20) {
+            const key = Object.keys(record.tokens)[0];
+
+            console.log("extraToken", String(key))
+            console.log("extraToken", extraToken)
+            record.tokens[key].price = {
+              value: extraToken.value,
+              currency: {
+                name: extraToken.name,
+                decimals: extraToken.decimals,
+              }
+            };
+            currencyType =  extraToken.name;
+            if (record.avgItemPrice == 0){
+              record.totalPrice = Number(Number(extraToken.value).toFixed(2));
+              let avgItemPriceSum: number = 0;
+              for(const key in record.tokens){
+                if (Object.prototype.hasOwnProperty.call(record.tokens, key)) {
+                  const tokenInfo: TokenInfo = record.tokens[key];
+                  avgItemPriceSum += Number(tokenInfo.price.value);
+                }
+              }
+              record.avgItemPrice = Number((avgItemPriceSum / Object.keys(record.tokens).length).toFixed(2))
+            }
           }
 
           console.log("[record status]", record ? "found" : "not found")
-          //console.log(JSON.stringify(record, null, 4));
+          console.log(JSON.stringify(record, null, 4));
 
           await addTransactionRecord(db, record);
           let t: any = await getTransactionByHash(db, txEvent.hash);
@@ -179,7 +263,8 @@ const handleTransaction: HandleTransaction = async (
           //console.log(t)
 
           console.log("[record by id status]", records ? `found (${records.length})` : "err")
-          let global_name = record.tokens[tokenId].name ? record.tokens[tokenId].name : record.contractAddress
+          let global_name = record.tokens[tokenId]?.name ?? record.contractAddress;
+
 
           if (records.length > 1) {
             // compare the timestamp of the last two records and save the result in minutes
@@ -342,7 +427,7 @@ const handleTransaction: HandleTransaction = async (
                 let alert_type: FindingType = FindingType.Info;
                 let alert_severity = FindingSeverity.Info;
                 let alertLabel: Label[] = [];
-                let floorMessage = record.floorPrice ? `with collection floor of ${record.floorPrice} ${chainCurrency}` : `(no floor price detected)`;
+                let floorMessage = record.floorPrice ? `with collection floor of ${record.floorPrice.toFixed(4)} ${chainCurrency}` : `(no floor price detected)`;
                 let extraInfo = `at ${(record.avgItemPrice).toFixed(4)} ${chainCurrency} ${floorMessage}`
                 //console.log("numericalValue: ", numericalValue)
 
@@ -395,10 +480,9 @@ const handleTransaction: HandleTransaction = async (
                    * ALL NEW REGULAR SALES GO HERE
                    */
                   //console.log(JSON.stringify(find.tokens[tokenKey] , null, 2))
-                  let currencyType;
                   //let currencyType = find && tokenKey && find.tokens[tokenKey] ? find.tokens[tokenKey].markets!.price.currency.name : chainCurrency;
                   alert_name = `nft-sale`;
-                  alert_description = `${tokenName} id ${tokenKey} sold at ${(record.avgItemPrice).toFixed(3)} ${currencyType || chainCurrency} ${floorMessage} (${record.floorPriceDiff})`;
+                  alert_description = `${tokenName} id ${tokenKey} sold at ${(record.avgItemPrice).toPrecision(2)} ${currencyType || chainCurrency} ${floorMessage} (${record.floorPriceDiff})`;
                   alertLabel.push({
                     entityType: EntityType.Address,
                     entity: `${tokenKey},${record.contractAddress}`,
@@ -447,6 +531,19 @@ const handleTransaction: HandleTransaction = async (
 
   return findings;
 };
+
+
+function roundNumber(num: number): number {
+  if (num >= 1 || num === 0) {
+    return parseFloat(num.toFixed(2));
+  } else if (num < 1) {
+    const numStr: string = num.toString();
+    const decimalPlaces: number = Math.max(2, numStr.length - numStr.indexOf('.') - 1);
+    return parseFloat(num.toFixed(decimalPlaces));
+  }
+
+  throw new Error("Invalid number"); // Handling case if none of the conditions are met
+}
 
 function extractNumericalValue(floorPriceDiff: string | undefined): number {
   if (!floorPriceDiff) {
@@ -579,7 +676,7 @@ const getBatchContractData = async (contractAddresses: string[], chainId?: numbe
       retries: 5
     }
   );
-  console.log(result)
+  //console.log(result)
   return result;
 };
 
