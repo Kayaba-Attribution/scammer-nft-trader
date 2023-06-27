@@ -24,7 +24,7 @@ import db, {
   ALCHEMY_API_KEY_ARB
 
 } from './db';
-import { addTransactionRecord, getTransactionsByAddress, getTransactionByHash, getLatestTransactionRecords } from './client';
+import { addTransactionRecord, getOpenSeaFloorPrice, getTransactionByHash, getLatestTransactionRecords } from './client';
 
 import { Network, Alchemy, NftTokenType } from 'alchemy-sdk';
 import { transferEventTopics } from "./config/logEventTypes";
@@ -188,6 +188,11 @@ const handleTransaction: HandleTransaction = async (
           let record: TransactionRecord;
           let _avgItemPrice = find.totalPrice / Object.keys(find.tokens).length;
           let _floorPrice = find.contractData.openSea?.floorPrice || 0;
+          let directFloorPrice = await getOpenSeaFloorPrice(find.contractAddress)
+          // if direct floor price is not null compare against _floorPrice and set _floorPrice to the min of the two
+          if (directFloorPrice !== null) {
+            _floorPrice = _floorPrice == 0 ? directFloorPrice : Math.min(_floorPrice, directFloorPrice)
+          } 
           record = {
             interactedMarket: find.interactedMarket.name,
             transactionHash: find.transactionHash,
@@ -263,6 +268,9 @@ const handleTransaction: HandleTransaction = async (
               }
               record.avgItemPrice = Number((avgItemPriceSum / Object.keys(record.tokens).length).toFixed(2))
               record.totalPrice = avgItemPriceSum;
+
+              record.avgItemPrice = round(record.avgItemPrice, 2);
+              record.totalPrice = round(record.totalPrice, 2);
             }
           }
 
@@ -693,7 +701,7 @@ const getBatchContractData = async (contractAddresses: string[], chainId?: numbe
       retries: 5
     }
   );
-  //console.log(result)
+  console.log(result)
   return result;
 };
 

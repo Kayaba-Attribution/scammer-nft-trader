@@ -1,5 +1,63 @@
 import { TransactionRecord, TokenInfo, MarketName } from './types/types.js';
 import { Database } from 'sqlite3';
+import retry from 'async-retry';
+
+export async function getOpenSeaFloorPrice(contractAddress: string): Promise<number | null> {
+    let slug: string = '';
+    const slugUrl = `https://api.opensea.io/api/v1/asset_contract/${contractAddress}`;
+    const apiKey = '9a3186c6c9444ca7884ee18b58a5c16f';
+  
+    const result = await retry(
+      async () => {
+        const response = await fetch(slugUrl, {
+          headers: {
+            'X-API-KEY': apiKey,
+          },
+        });
+  
+        if (!response.ok) {
+          console.log('Might be hitting the rate limit, try again', contractAddress);
+          throw new Error('Request failed');
+        }
+  
+        return response.json();
+      },
+      {
+        retries: 5,
+      }
+    );
+
+    if(result.collection == null) return null;
+    if(!result.collection.slug) return null;
+
+    slug = result.collection.slug;
+    const floorPriceUrl = `https://api.opensea.io/api/v1/collection/${slug}/stats`;
+    const floorResult = await retry(
+        async () => {
+          const response = await fetch(floorPriceUrl, {
+            headers: {
+              'X-API-KEY': apiKey,
+            },
+          });
+    
+          if (!response.ok) {
+            console.log('Might be hitting the rate limit, try again', contractAddress);
+            throw new Error('Request failed');
+          }
+    
+          return response.json();
+        },
+        {
+          retries: 5,
+        }
+      );
+  
+    console.log("OpenSea Direct Floor Price:", slug, floorResult.stats.floor_price);
+    let floorPrice = floorResult.stats.floor_price;
+    if(!floorPrice) return null;
+    return floorPrice;
+  }
+  
 
 export const addTransactionRecord = (db: Database, record: TransactionRecord): Promise<void> => {
     return new Promise(async (resolve, reject) => {
