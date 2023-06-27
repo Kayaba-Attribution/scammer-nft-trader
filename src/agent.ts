@@ -220,14 +220,11 @@ const handleTransaction: HandleTransaction = async (
               name: find.tokens[token].name ? find.tokens[token].name : info.name!,
               price: _price,
             }
-            currencyType = find.tokens[token].name
           }
 
           for (const extraToken of extraERC20) {
             const key = Object.keys(record.tokens)[0];
 
-            console.log("extraToken", String(key))
-            console.log("extraToken", extraToken)
             record.tokens[key].price = {
               value: extraToken.value,
               currency: {
