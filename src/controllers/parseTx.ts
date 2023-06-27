@@ -42,7 +42,7 @@ async function transferIndexer(
     for (const log of txEvent.logs) {
         const logAddress = log.address.toLowerCase();
         const market = markets[logAddress];
-        console.log(market, logAddress)
+        //console.log(market, logAddress)
         if (logAddress in currencies) {
             tx.currency = currencies[logAddress as keyof typeof currencies];
         }
@@ -51,19 +51,19 @@ async function transferIndexer(
             market?.name === 'opensea' &&
             market?.topics.includes(log.topics[0])
         ) {
-            console.log("parseSeaport")
+            console.log("parseSeaport...")
             parseSeaport(tx, log, market, iface);
         } else if (
             market?.name === 'looksrare' &&
             market?.topics.includes(log.topics[0])
         ) {
-            console.log("parseLooksRare")
+            console.log("parseLooksRare...")
             parseLooksRare(tx, log, market, iface);
         } else if (
             market?.name === 'blur' &&
             market?.topics.includes(log.topics[0])
         ) {
-            console.log("blur")
+            console.log("blur...")
             parseBlur(tx, log, market, iface, contractData);
         } 
     }

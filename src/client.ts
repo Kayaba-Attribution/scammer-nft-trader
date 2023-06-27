@@ -2,6 +2,107 @@ import { TransactionRecord, TokenInfo, MarketName } from './types/types.js';
 import { Database } from 'sqlite3';
 import retry from 'async-retry';
 import axios from 'axios';
+import { LRUCache } from 'lru-cache';
+import { Network } from 'forta-agent';
+
+// it helps not to make a lot of requests for the same token
+interface CoinPriceResponse {
+    coins: {
+      [key: string]: {
+        decimals: number;
+        symbol: string;
+        price: number;
+        timestamp: number;
+        confidence: number;
+      };
+    };
+  }
+  
+  const coinPriceCache = new LRUCache({
+    max: 300, // addresses
+    ttl: 60 * 60 * 1000, // 60 min
+    fetchMethod: async (key: string) => {
+      const [coinKey, timestamp] = key.split('/');
+      const url = timestamp
+        ? `https://coins.llama.fi/prices/historical/${timestamp}`
+        : 'https://coins.llama.fi/prices/current';
+       //console.log(`${url}/${coinKey}`);
+      const res = await fetch(`${url}/${coinKey}`);
+      const data: CoinPriceResponse = await res.json();
+  
+      const price = data.coins[coinKey]?.price;
+      if (price == null) {
+        console.log('Unknown token price', coinKey);
+      }
+      return price;
+    },
+  });
+  
+
+export async function getNativeTokenPrice(
+    network: Network,
+    timestamp?: number,
+  ): Promise<number | undefined> {
+    // https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc
+    const keys: { [chain: number]: string } = {
+      [Network.MAINNET]: 'coingecko:ethereum',
+      [Network.BSC]: 'coingecko:binancecoin',
+      [Network.POLYGON]: 'coingecko:matic-network',
+      [Network.ARBITRUM]: 'coingecko:ethereum', // arbitrum doesn't have a native token
+      [Network.FANTOM]: 'coingecko:fantom',
+      [Network.AVALANCHE]: 'coingecko:avalanche-2',
+      [Network.OPTIMISM]: 'coingecko:ethereum', // optimism doesn't have a native token
+    };
+  
+    if (!keys[network]) throw new Error('Not implemented yet: ' + Network[network]);
+  
+    try {
+      const coinKey = [keys[network], timestamp].filter((v) => v).join('/');
+      const price = await coinPriceCache.fetch(coinKey);
+      if (price !== undefined) {
+        return price;
+      } else {
+        console.log('Price not found for coinKey', coinKey);
+        return undefined;
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+export async function getErc20TokenPrice(
+    network: Network,
+    address: string,
+    timestamp?: number,
+  ): Promise<number | undefined> {
+    const chainKeysByNetwork: { [x: number]: string } = {
+      [Network.MAINNET]: 'ethereum',
+      [Network.BSC]: 'bsc',
+      [Network.POLYGON]: 'polygon',
+      [Network.ARBITRUM]: 'arbitrum',
+      [Network.FANTOM]: 'fantom',
+      [Network.AVALANCHE]: 'avax',
+      [Network.OPTIMISM]: 'optimism',
+    };
+  
+    if (!chainKeysByNetwork[network]) throw new Error('Not implemented yet: ' + Network[network]);
+  
+    try {
+      const coinKey = [`${chainKeysByNetwork[network]}:${address}`, timestamp]
+        .filter((v) => v)
+        .join('/');
+  
+      const price = await coinPriceCache.fetch(coinKey);
+      if (price !== undefined) {
+        return price;
+      } else {
+        console.log('Price not found for coinKey', coinKey);
+        return undefined;
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  }
 
 export async function getOpenSeaFloorPrice(contractAddress: string): Promise<number | null> {
     let slug: string = '';

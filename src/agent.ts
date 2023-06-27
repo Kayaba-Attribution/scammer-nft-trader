@@ -12,9 +12,10 @@ import {
   FindingSeverity,
   getEthersProvider,
   getChainId,
-  Log,
-
+  Log
 } from "forta-agent";
+
+import { Network as fortaNetwork } from "forta-agent";
 
 import { createCustomAlert } from "./utils/alerts";
 import db, {
@@ -24,7 +25,14 @@ import db, {
   ALCHEMY_API_KEY_ARB
 
 } from './db';
-import { addTransactionRecord, getOpenSeaFloorPrice, getTransactionByHash, getLatestTransactionRecords } from './client';
+import {
+  addTransactionRecord,
+  getOpenSeaFloorPrice,
+  getTransactionByHash,
+  getLatestTransactionRecords,
+  getNativeTokenPrice,
+  getErc20TokenPrice,
+} from './client';
 
 import { Network, Alchemy, NftTokenType } from 'alchemy-sdk';
 import { transferEventTopics } from "./config/logEventTypes";
@@ -42,6 +50,7 @@ import { AbiCoder } from "ethers";
 
 let nftContractsData: NftContract[] = [];
 let chainCurrency: string = 'ETH';
+
 
 /**	
   Phishers/scammers that steal NFTs eventually need to sell them.
@@ -86,10 +95,10 @@ function compareKeysAndElements(obj: { [key: string]: boolean }, arr: string[]):
 }
 
 
-async function extractTransferInfo(log: Log): Promise<{ value: string, name: string, decimals: number } | null> {
+async function extractTransferInfo(log: Log, network: fortaNetwork): Promise<{ usdPrice:number, value: string, name: string, decimals: number } | null> {
   const { address, topics, data } = log;
 
-  if (currencies.hasOwnProperty(address)){
+  if (currencies.hasOwnProperty(address)) {
     return null;
   }
 
@@ -114,7 +123,11 @@ async function extractTransferInfo(log: Log): Promise<{ value: string, name: str
     const decimals = await erc20Contract.decimals();
     decimalData = decimalData / 10 ** decimals;
 
+    let usdPrice = await getErc20TokenPrice(network, address) ?? 0;
+    console.log(`token: ${symbol} usd price: ${usdPrice}`)
+
     const transferInfo = {
+      usdPrice: usdPrice,
       value: String(decimalData),
       name: symbol,
       decimals: decimals,
@@ -131,10 +144,15 @@ const handleTransaction: HandleTransaction = async (
   txEvent: TransactionEvent,
   testAPI?: NftContract[]
 ) => {
+  const network = txEvent.network;
+  console.log("network", network)
+  const nativeTokenPrice = await getNativeTokenPrice(network);
+  console.log("nativeTokenPrice", nativeTokenPrice)
+
   const provider = getEthersProvider();
   const chainId = (await provider.getNetwork()).chainId;
   const findings: Finding[] = [];
-  const extraERC20: { value: string, name: string, decimals: number }[] = [];
+  const extraERC20: { usdPrice:number, value: string, name: string, decimals: number }[] = [];
   let currencyType;
 
   let NFT_RELATED = false;
@@ -154,7 +172,7 @@ const handleTransaction: HandleTransaction = async (
 
   for (const log of txEvent.logs) {
     if (log.topics.includes(transferEventTopics.ERC20)) {
-      let res = await extractTransferInfo(log)
+      let res = await extractTransferInfo(log, network)
       if (res) extraERC20.push(res)
     }
   }
@@ -192,7 +210,7 @@ const handleTransaction: HandleTransaction = async (
           // if direct floor price is not null compare against _floorPrice and set _floorPrice to the min of the two
           if (directFloorPrice !== null) {
             _floorPrice = _floorPrice == 0 ? directFloorPrice : Math.min(_floorPrice, directFloorPrice)
-          } 
+          }
           record = {
             interactedMarket: find.interactedMarket.name,
             transactionHash: find.transactionHash,
@@ -229,25 +247,26 @@ const handleTransaction: HandleTransaction = async (
 
           console.log("extraERC20", JSON.stringify(extraERC20))
 
-          let lastName: string = '';
           const sumValues: { [name: string]: number } = {};
 
           const key = Object.keys(record.tokens)[0];
-          
+          let nativeERC20value: number = 0;
+          let ercToNativeMSG: string = ``;
+
           // ASUME ONLY ONE ERC20 TOKEN
-          if(extraERC20.length > 0){
+          if (extraERC20.length > 0) {
             const tokenName = extraERC20[0].name;
 
             for (const extraToken of extraERC20) {
               const value = Number(extraToken.value);
-              
+
               if (tokenName in sumValues) {
                 sumValues[tokenName] += value;
               } else {
                 sumValues[tokenName] = value;
               }
             }
-            
+
             record.tokens[key].price = {
               value: String(sumValues[tokenName]),
               currency: {
@@ -257,10 +276,10 @@ const handleTransaction: HandleTransaction = async (
             };
 
             currencyType = tokenName;
-            if (record.avgItemPrice == 0){
-              console.log(JSON.stringify(record.tokens))
+            if (record.avgItemPrice == 0) {
+              //console.log(JSON.stringify(record.tokens))
               let avgItemPriceSum: number = 0;
-              for(const key in record.tokens){
+              for (const key in record.tokens) {
                 if (Object.prototype.hasOwnProperty.call(record.tokens, key)) {
                   const tokenInfo: TokenInfo = record.tokens[key];
                   avgItemPriceSum += Number(tokenInfo.price.value);
@@ -272,6 +291,15 @@ const handleTransaction: HandleTransaction = async (
               record.avgItemPrice = round(record.avgItemPrice, 2);
               record.totalPrice = round(record.totalPrice, 2);
             }
+
+            if(nativeTokenPrice){
+              nativeERC20value = Number(truncateDecimal(Number(sumValues[tokenName]) * Number(extraERC20[0].usdPrice) / nativeTokenPrice));
+              console.log(`1 ${chainCurrency} = ${nativeTokenPrice} | 1 ${tokenName} => ${extraERC20[0].usdPrice} | ${sumValues[tokenName]} ${tokenName} = ${nativeERC20value} ${chainCurrency}`)
+              ercToNativeMSG = `(~${nativeERC20value} ${chainCurrency})`
+              record.avgItemPrice = nativeERC20value;
+              record.totalPrice = nativeERC20value;
+            }
+            console.log(ercToNativeMSG)
           }
 
           console.log("[record status]", record ? "found" : "not found")
@@ -285,7 +313,6 @@ const handleTransaction: HandleTransaction = async (
           let records: any = await getLatestTransactionRecords(db, find.contractAddress, tokenId);
 
           //console.log("----- Accesed record on db by hash ----- \n\n")
-          //console.log(t)
 
           console.log("[record by id status]", records ? `found (${records.length})` : "err")
           let global_name = record.tokens[tokenId]?.name ?? record.contractAddress;
@@ -507,7 +534,8 @@ const handleTransaction: HandleTransaction = async (
                   //console.log(JSON.stringify(find.tokens[tokenKey] , null, 2))
                   //let currencyType = find && tokenKey && find.tokens[tokenKey] ? find.tokens[tokenKey].markets!.price.currency.name : chainCurrency;
                   alert_name = `nft-sale`;
-                  alert_description = `${tokenName} id ${tokenKey} sold at ${(record.avgItemPrice).toPrecision(3)} ${currencyType || chainCurrency} ${floorMessage} (${record.floorPriceDiff})`;
+                  let customValue = `${nativeERC20value != 0 ? sumValues[extraERC20[0].name] : truncateDecimal((record.avgItemPrice))}`
+                  alert_description = `${tokenName} id ${tokenKey} sold at ${customValue} ${currencyType || chainCurrency} ${ercToNativeMSG ? ercToNativeMSG: ''} ${floorMessage} (${record.floorPriceDiff})`;
                   alertLabel.push({
                     entityType: EntityType.Address,
                     entity: `${tokenKey},${record.contractAddress}`,
@@ -558,16 +586,25 @@ const handleTransaction: HandleTransaction = async (
 };
 
 
-function roundNumber(num: number): number {
-  if (num >= 1 || num === 0) {
-    return parseFloat(num.toFixed(2));
-  } else if (num < 1) {
-    const numStr: string = num.toString();
-    const decimalPlaces: number = Math.max(2, numStr.length - numStr.indexOf('.') - 1);
-    return parseFloat(num.toFixed(decimalPlaces));
+function truncateDecimal(number: number): string {
+  const decimalString = number.toFixed(20); // Convert number to a string with up to 20 decimals
+
+  // Find the index of the last non-zero digit
+  let lastIndex = decimalString.length - 1;
+  while (lastIndex >= 0 && decimalString[lastIndex] === '0') {
+    lastIndex--;
   }
 
-  throw new Error("Invalid number"); // Handling case if none of the conditions are met
+  // Check if the last non-zero digit is a decimal point
+  const isDecimalPoint = decimalString[lastIndex] === '.';
+  
+  // Check if there are any trailing zeros after the last non-zero digit
+  const hasTrailingZeros = lastIndex < decimalString.length - 1 && !isDecimalPoint;
+
+  // Determine the number of decimals to keep based on the presence of trailing zeros
+  const numDecimals = hasTrailingZeros ? 2 : 3;
+
+  return number.toFixed(numDecimals);
 }
 
 function extractNumericalValue(floorPriceDiff: string | undefined): number {
@@ -581,7 +618,7 @@ function extractNumericalValue(floorPriceDiff: string | undefined): number {
 
 
 const initialize: Initialize = async () => {
-
+  
 }
 
 const getName = async (provider: ethers.providers.Provider, address: string): Promise<string> => {
@@ -701,7 +738,7 @@ const getBatchContractData = async (contractAddresses: string[], chainId?: numbe
       retries: 5
     }
   );
-  console.log(result)
+  //console.log(result)
   return result;
 };
 
