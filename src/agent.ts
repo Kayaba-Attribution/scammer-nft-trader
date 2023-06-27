@@ -222,19 +222,38 @@ const handleTransaction: HandleTransaction = async (
             }
           }
 
-          for (const extraToken of extraERC20) {
-            const key = Object.keys(record.tokens)[0];
+          console.log("extraERC20", JSON.stringify(extraERC20))
 
+          let lastName: string = '';
+          const sumValues: { [name: string]: number } = {};
+
+          const key = Object.keys(record.tokens)[0];
+          
+          // ASUME ONLY ONE ERC20 TOKEN
+          if(extraERC20.length > 0){
+            const tokenName = extraERC20[0].name;
+
+            for (const extraToken of extraERC20) {
+              const value = Number(extraToken.value);
+              
+              if (tokenName in sumValues) {
+                sumValues[tokenName] += value;
+              } else {
+                sumValues[tokenName] = value;
+              }
+            }
+            
             record.tokens[key].price = {
-              value: extraToken.value,
+              value: String(sumValues[tokenName]),
               currency: {
-                name: extraToken.name,
-                decimals: extraToken.decimals,
+                name: tokenName,
+                decimals: extraERC20[0].decimals,
               }
             };
-            currencyType =  extraToken.name;
+
+            currencyType = tokenName;
             if (record.avgItemPrice == 0){
-              record.totalPrice = Number(Number(extraToken.value).toFixed(2));
+              console.log(JSON.stringify(record.tokens))
               let avgItemPriceSum: number = 0;
               for(const key in record.tokens){
                 if (Object.prototype.hasOwnProperty.call(record.tokens, key)) {
@@ -243,6 +262,7 @@ const handleTransaction: HandleTransaction = async (
                 }
               }
               record.avgItemPrice = Number((avgItemPriceSum / Object.keys(record.tokens).length).toFixed(2))
+              record.totalPrice = avgItemPriceSum;
             }
           }
 
@@ -479,7 +499,7 @@ const handleTransaction: HandleTransaction = async (
                   //console.log(JSON.stringify(find.tokens[tokenKey] , null, 2))
                   //let currencyType = find && tokenKey && find.tokens[tokenKey] ? find.tokens[tokenKey].markets!.price.currency.name : chainCurrency;
                   alert_name = `nft-sale`;
-                  alert_description = `${tokenName} id ${tokenKey} sold at ${(record.avgItemPrice).toPrecision(2)} ${currencyType || chainCurrency} ${floorMessage} (${record.floorPriceDiff})`;
+                  alert_description = `${tokenName} id ${tokenKey} sold at ${(record.avgItemPrice).toPrecision(3)} ${currencyType || chainCurrency} ${floorMessage} (${record.floorPriceDiff})`;
                   alertLabel.push({
                     entityType: EntityType.Address,
                     entity: `${tokenKey},${record.contractAddress}`,
