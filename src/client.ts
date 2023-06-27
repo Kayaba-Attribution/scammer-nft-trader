@@ -1,63 +1,64 @@
 import { TransactionRecord, TokenInfo, MarketName } from './types/types.js';
 import { Database } from 'sqlite3';
 import retry from 'async-retry';
+import axios from 'axios';
 
 export async function getOpenSeaFloorPrice(contractAddress: string): Promise<number | null> {
     let slug: string = '';
     const slugUrl = `https://api.opensea.io/api/v1/asset_contract/${contractAddress}`;
     const apiKey = '9a3186c6c9444ca7884ee18b58a5c16f';
-  
+
     const result = await retry(
-      async () => {
-        const response = await fetch(slugUrl, {
-          headers: {
-            'X-API-KEY': apiKey,
-          },
-        });
-  
-        if (!response.ok) {
-          console.log('Might be hitting the rate limit, try again', contractAddress);
-          throw new Error('Request failed');
+        async () => {
+            const response = await axios.get(slugUrl, {
+                headers: {
+                    'X-API-KEY': apiKey,
+                },
+            });
+
+            if (!response.data) {
+                console.log('Might be hitting the rate limit, try again', contractAddress);
+                throw new Error('Request failed');
+            }
+
+            return response.data;
+        },
+        {
+            retries: 5,
         }
-  
-        return response.json();
-      },
-      {
-        retries: 5,
-      }
     );
 
-    if(result.collection == null) return null;
-    if(!result.collection.slug) return null;
+    if (result.collection == null) return null;
+    if (!result.collection.slug) return null;
 
     slug = result.collection.slug;
     const floorPriceUrl = `https://api.opensea.io/api/v1/collection/${slug}/stats`;
     const floorResult = await retry(
         async () => {
-          const response = await fetch(floorPriceUrl, {
-            headers: {
-              'X-API-KEY': apiKey,
-            },
-          });
-    
-          if (!response.ok) {
-            console.log('Might be hitting the rate limit, try again', contractAddress);
-            throw new Error('Request failed');
-          }
-    
-          return response.json();
+            const response = await axios.get(floorPriceUrl, {
+                headers: {
+                    'X-API-KEY': apiKey,
+                },
+            });
+
+            if (!response.data) {
+                console.log('Might be hitting the rate limit, try again', contractAddress);
+                throw new Error('Request failed');
+            }
+
+            return response.data;
         },
         {
-          retries: 5,
+            retries: 5,
         }
-      );
-  
+    );
+
     console.log("OpenSea Direct Floor Price:", slug, floorResult.stats.floor_price);
     let floorPrice = floorResult.stats.floor_price;
-    if(!floorPrice) return null;
+    if (!floorPrice) return null;
     return floorPrice;
-  }
-  
+}
+
 
 export const addTransactionRecord = (db: Database, record: TransactionRecord): Promise<void> => {
     return new Promise(async (resolve, reject) => {
@@ -244,10 +245,10 @@ export async function getLatestTransactionRecords(
     db: Database,
     contractAddress: string,
     tokenId: string
-  ): Promise<Array<{ transaction: TransactionRow; token: TokenRow }>> {
+): Promise<Array<{ transaction: TransactionRow; token: TokenRow }>> {
     return new Promise((resolve, reject) => {
-      db.all(
-        `
+        db.all(
+            `
         SELECT t.*, n.*
         FROM transactions t
         JOIN nfts n ON t.transaction_hash = n.transaction_hash
@@ -255,47 +256,47 @@ export async function getLatestTransactionRecords(
         ORDER BY t.timestamp DESC
         LIMIT 2
         `,
-        [contractAddress, tokenId],
-        (err, rows: any[]) => {
-          if (err) {
-            reject(err.message);
-          } else {
-            const results: Array<{ transaction: TransactionRow; token: TokenRow }> = [];
-  
-            for (const row of rows) {
-              const transaction: TransactionRow = {
-                interacted_market: row.interacted_market,
-                transaction_hash: row.transaction_hash,
-                to_address: row.to_address,
-                from_address: row.from_address,
-                initiator: row.initiator,
-                total_price: row.total_price,
-                avg_item_price: row.avg_item_price,
-                contract_address: row.contract_address,
-                floor_price: row.floor_price,
-                timestamp: row.timestamp,
-                floor_price_diff: row.floor_price_diff,
-              };
-  
-              const token: TokenRow = {
-                transaction_hash: row.transaction_hash,
-                token_id: row.token_id,
-                name: row.name,
-                price_value: row.price_value,
-                price_currency_name: row.price_currency_name,
-                price_currency_decimals: row.price_currency_decimals,
-              };
-  
-              results.push({ transaction, token });
+            [contractAddress, tokenId],
+            (err, rows: any[]) => {
+                if (err) {
+                    reject(err.message);
+                } else {
+                    const results: Array<{ transaction: TransactionRow; token: TokenRow }> = [];
+
+                    for (const row of rows) {
+                        const transaction: TransactionRow = {
+                            interacted_market: row.interacted_market,
+                            transaction_hash: row.transaction_hash,
+                            to_address: row.to_address,
+                            from_address: row.from_address,
+                            initiator: row.initiator,
+                            total_price: row.total_price,
+                            avg_item_price: row.avg_item_price,
+                            contract_address: row.contract_address,
+                            floor_price: row.floor_price,
+                            timestamp: row.timestamp,
+                            floor_price_diff: row.floor_price_diff,
+                        };
+
+                        const token: TokenRow = {
+                            transaction_hash: row.transaction_hash,
+                            token_id: row.token_id,
+                            name: row.name,
+                            price_value: row.price_value,
+                            price_currency_name: row.price_currency_name,
+                            price_currency_decimals: row.price_currency_decimals,
+                        };
+
+                        results.push({ transaction, token });
+                    }
+
+                    resolve(results);
+                }
             }
-  
-            resolve(results);
-          }
-        }
-      );
+        );
     });
-  }
-  
+}
+
 
 export const getTransactionsByAddress = (db: Database, address: string): Promise<TransactionRecord[]> => {
     return new Promise((resolve, reject) => {
