@@ -68,7 +68,7 @@ const parseSeaport = (
         }
     });
 
-    console.log("isNftTrader:", isNftTrader)
+    //console.log("isNftTrader:", isNftTrader)
     if (isNftTrader) return parseNftTrader(tx, log, decodedLogData, abiCoder);
 
     let nftOnConsiderationSide = false;
