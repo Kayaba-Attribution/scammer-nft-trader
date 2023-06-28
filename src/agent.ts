@@ -494,6 +494,8 @@ const handleTransaction: HandleTransaction = async (
                 let floorMessage = record.floorPrice ? `with collection floor of ${record.floorPrice.toFixed(4)} ${chainCurrency}` : `(no floor price detected)`;
                 let extraInfo = `at ${(record.avgItemPrice).toFixed(4)} ${chainCurrency} ${floorMessage}`
                 //console.log("numericalValue: ", numericalValue)
+                let isZeroERC20 = record.avgItemPrice == 0 && ercToNativeMSG ? true : false;
+                console.log("isZeroERC20: ", isZeroERC20)
 
                 if (numericalValue >= 20) {
                   alert_name = `nft-sold-above-floor-price`;
@@ -506,7 +508,7 @@ const handleTransaction: HandleTransaction = async (
                     remove: false,
                     metadata: {}
                   })
-                } else if (numericalValue >= -100 && numericalValue <= -98) {
+                } else if (numericalValue >= -100 && numericalValue <= -98 && !isZeroERC20) {
                   alert_severity = FindingSeverity.Medium;
                   alert_type = FindingType.Suspicious;
                   alert_name = `nft-phishing-sale`;
@@ -546,6 +548,7 @@ const handleTransaction: HandleTransaction = async (
                   //console.log(JSON.stringify(find.tokens[tokenKey] , null, 2))
                   //let currencyType = find && tokenKey && find.tokens[tokenKey] ? find.tokens[tokenKey].markets!.price.currency.name : chainCurrency;
                   alert_name = `nft-sale`;
+                  if(isZeroERC20) alert_name = `nft-sale-erc20-price-unknown`;
                   let customValue = `${nativeERC20value != 0 ? sumValues[extraERC20[0].name] : truncateDecimal((record.avgItemPrice))}`
                   alert_description = `${tokenName} id ${tokenKey} sold at ${customValue} ${currencyType || chainCurrency} ${ercToNativeMSG ? ercToNativeMSG: ''} ${floorMessage} (${record.floorPriceDiff})`;
                   alertLabel.push({
