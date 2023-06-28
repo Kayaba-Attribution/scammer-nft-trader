@@ -39,7 +39,7 @@ Describe each of the type of alerts fired by this agent
   - Included the timeDiff between transactions
   - Includes the timestamp floorPriceDiff of the first and second txns
 
-- nft-phishing-sale
+- nft-phishing-sale (nft-potential-low-value-phishing-sale for floorPrice < 50 USD>)
   - Fired when a previously indexed nft transaction has a value lower than a certain threshold (<-99% floor || 0)
   - Severity is always set to "Medium"
   - Type is always set to "Suspicious" 
@@ -346,6 +346,10 @@ BSC OpenSea Trade:
 Polygon OpenSea Trade:
 
 - npm run polytx 0x50b9f159f227ce8bf0f596831adaddad49616537d3f36d1b5533f89d4aa94a50
+
+## Alerts Test
+
+- nft-sale 0xb9c1bf89d896ae50ff0cb9bb3ad9de1292c4378516a4399d309658b1bb720252
 
 ## Current Test Suite:
 

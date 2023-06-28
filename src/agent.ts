@@ -514,7 +514,7 @@ const handleTransaction: HandleTransaction = async (
                   alert_severity = FindingSeverity.Medium;
                   alert_type = FindingType.Suspicious;
                   alert_name = `nft-phishing-sale`;
-                  if(floorPriceUSD < 50) alert_name = `nft-phishing-sale-low-value`;
+                  if(floorPriceUSD < 50) alert_name = `nft-potential-low-value-phishing-sale`;
                   alert_description = `${tokenName} ${tokenKey} sold for less than -99% of the floor price, ${extraInfo}`;
                   alertLabel.push({
                     entityType: EntityType.Address,
