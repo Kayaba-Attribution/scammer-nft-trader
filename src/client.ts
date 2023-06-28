@@ -26,7 +26,7 @@ interface CoinPriceResponse {
       const url = timestamp
         ? `https://coins.llama.fi/prices/historical/${timestamp}`
         : 'https://coins.llama.fi/prices/current';
-       //console.log(`${url}/${coinKey}`);
+       console.log(`${url}/${coinKey}`);
       const res = await fetch(`${url}/${coinKey}`);
       const data = await res.json() as CoinPriceResponse;
   

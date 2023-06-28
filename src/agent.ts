@@ -67,11 +67,13 @@ let chainCurrency: string = 'ETH';
 */
 
 const calculateFloorPriceDiff = (avgItemPrice: number, floorPrice: number | null): string => {
+  console.log(`avgItemPrice: ${avgItemPrice}, floorPrice: ${floorPrice}`)
   if (floorPrice === null || floorPrice === 0) {
     return "UNKNOWN";
   }
 
   const floorPriceDiff = ((avgItemPrice - floorPrice) / floorPrice) * 100;
+  console.log(`floorPriceDiff: ${floorPriceDiff}`)
   return `${floorPriceDiff >= 0 ? "+" : ""}${floorPriceDiff.toFixed(2)}%`;
 };
 
@@ -226,7 +228,7 @@ const handleTransaction: HandleTransaction = async (
             floorPrice: _floorPrice,
             timestamp: !testAPI ? txEvent.timestamp : getCurrentTimestamp(),
             tokens: {},
-            floorPriceDiff: calculateFloorPriceDiff(_avgItemPrice, _floorPrice)
+            floorPriceDiff: ''
           }
 
           //console.log(find.contractData.openSea)
@@ -310,6 +312,8 @@ const handleTransaction: HandleTransaction = async (
             console.log(ercToNativeMSG)
           }
 
+          record.floorPriceDiff = calculateFloorPriceDiff(record.avgItemPrice, _floorPrice)
+
           console.log("[record status]", record ? "found" : "not found")
           console.log(JSON.stringify(record, null, 4));
 
@@ -366,7 +370,7 @@ const handleTransaction: HandleTransaction = async (
 
               let alert: Finding;
               let alertLabel: Label[] = [];
-              let regularSaleExtra = `, for a value of ${(records[0].transaction.avg_item_price).toFixed(4)} ETH where the price floor is ${records[0].transaction.floor_price} ETH`;
+              let regularSaleExtra = `, for a value of ${truncateDecimal(records[0].transaction.avg_item_price)} ${chainCurrency} where the price floor is ${records[0].transaction.floor_price} ${chainCurrency}`;
 
               console.log("----- floorDiffs -----", floorDiffs, lastSaleFloorPrice)
 
@@ -604,15 +608,21 @@ function truncateDecimal(number: number): string {
   }
 
   // Check if the last non-zero digit is a decimal point
-  const isDecimalPoint = decimalString[lastIndex] === '.';
+  if (decimalString[lastIndex] === '.') {
+    lastIndex--;
+  }
+
+  // Finding the index of the decimal point
+  const decimalPointIndex = decimalString.indexOf('.');
+
+  // Maximum number of decimal places to keep
+  const maxDecimals = 4;
+
+  // Finding the maximum index based on the number of significant decimal places
+  const maxIndex = decimalPointIndex + maxDecimals;
   
-  // Check if there are any trailing zeros after the last non-zero digit
-  const hasTrailingZeros = lastIndex < decimalString.length - 1 && !isDecimalPoint;
-
-  // Determine the number of decimals to keep based on the presence of trailing zeros
-  const numDecimals = hasTrailingZeros ? 2 : 3;
-
-  return number.toFixed(numDecimals);
+  // Return the truncated string limited by the number of significant decimal places
+  return decimalString.slice(0, Math.min(lastIndex + 1, maxIndex));
 }
 
 function extractNumericalValue(floorPriceDiff: string | undefined): number {
