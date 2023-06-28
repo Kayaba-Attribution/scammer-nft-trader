@@ -146,11 +146,7 @@ const handleTransaction: HandleTransaction = async (
 ) => {
   const network = txEvent.network;
   console.log("network", network)
-  const nativeTokenPrice = await getNativeTokenPrice(network);
-  console.log("nativeTokenPrice", nativeTokenPrice)
 
-  const provider = getEthersProvider();
-  const chainId = (await provider.getNetwork()).chainId;
   const findings: Finding[] = [];
   const extraERC20: { usdPrice:number, value: string, name: string, decimals: number }[] = [];
   let currencyType;
@@ -169,6 +165,13 @@ const handleTransaction: HandleTransaction = async (
     console.log(txEvent.hash, "is not agent related")
     return findings;
   }
+  console.log("***", txEvent.hash, "is agent related")
+
+
+  const nativeTokenPrice = await getNativeTokenPrice(network);
+  console.log("nativeTokenPrice", nativeTokenPrice)
+  const provider = getEthersProvider();
+  const chainId = (await provider.getNetwork()).chainId;
 
   for (const log of txEvent.logs) {
     if (log.topics.includes(transferEventTopics.ERC20)) {
@@ -231,6 +234,11 @@ const handleTransaction: HandleTransaction = async (
 
           // iterate over the tokens of find
           for (const token of Object.keys(find.tokens)) {
+            console.log(
+              find.tokens[token].markets,
+              find.interactedMarket.name,
+              JSON.stringify(find.tokens[token].markets)
+            )
             let _price = find.tokens[token].markets ?
               find.tokens[token].markets![find.interactedMarket.name].price
               : { value: "0", currency: { name: 'ERR', decimals: 0 } };

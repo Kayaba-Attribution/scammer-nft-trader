@@ -28,7 +28,7 @@ interface CoinPriceResponse {
         : 'https://coins.llama.fi/prices/current';
        //console.log(`${url}/${coinKey}`);
       const res = await fetch(`${url}/${coinKey}`);
-      const data: CoinPriceResponse = await res.json();
+      const data = await res.json() as CoinPriceResponse;
   
       const price = data.coins[coinKey]?.price;
       if (price == null) {
