@@ -6,11 +6,12 @@ This agent analyzes NFT transactions on OpenSea, LooksRare and Blur and generate
 
 Having all the records stored, it is possible to run any type of queries to extract and identify suspicious activities, such as NFTs being sold far from the floor price, or NFTs being sold too quickly.
 
-Bad NFT Orders such as phishing are detected, tracked, and labeled. 
+Bad NFT Orders such as phishing are detected, tracked, and labeled.
 
 ## Supported Chains
 
 - Ethereum
+
   - OpenSea
   - LooksRare
   - Blur
@@ -24,30 +25,63 @@ Describe each of the type of alerts fired by this agent
 
 > floorPriceDiff: The difference between the floor price and the average item price, expressed as a percentage
 
+#### Standard Metadada:
 
-- nft-sold-above-floor-price
-  - Fired when a floorPriceDiff is above a certain threshold (+110%)
-  - Severity is always set to "Info"
-  - Type is always set to "Info" 
-  - Includes the tokens sold, along with the currency used and value
+    - interactedMarket: opensea|blur|looksRare
+    - transactionHash: hash
+    - toAddr: address
+    - fromAddr: address
+    - initiator: address
+    - totalPrice: number
+    - avgItemPrice: number
+    - contractAddress: address,
+    - floorPrice: number,
+    - timestamp: timestamp,
+    - floorPriceDiff: +/- number%
 
-- indexed-nft-sale
-  - Fired when a previously indexed tokenId of a collection is sold
-  - Severity is always set to "Info"
-  - Type is always set to "Info" 
-  - Included the time between transactions
-  - Included the timeDiff between transactions
-  - Includes the timestamp floorPriceDiff of the first and second txns
+**nft-sale**
 
-- nft-phishing-sale (nft-potential-low-value-phishing-sale for floorPrice < 50 USD>)
+- Fired when the bot detects any ERC721/1155 order in any of the marketplaces
+- Includes standard metadata
+- Severity is always set to "Info"
+- Type is always set to "Info"
+- Labels
+  - nft-sale-record (id,address)
+
+Notes:
+- If the the transfer uses ERC20 and the price is not retrivable it will be fired with the name "nft-sale-erc20-price-unknown"
+- If no floorPrice is detected it will be fired with the name "nft-sale-floor-price-unknown"
+
+**nft-sold-above-floor-price**
+
+- Fired when a floorPriceDiff is above a certain threshold (+110%)
+- Includes standard metadata
+- Severity is always set to "Info"
+- Type is always set to "Info"
+- Labels
+  - nft-sold-above-floor-price (id,address)
+
+**indexed-nft-sale**
+
+- Fired when a previously indexed tokenId of a collection is sold
+- Includes standard metadata
+- Severity is always set to "Info"
+- Type is always set to "Info"
+- Includes the time between transactions
+- Includes the timeDiff between transactions
+- Includes the timestamp floorPriceDiff of the first and second txns
+
+**nft-phishing-sale** (nft-potential-low-value-phishing-sale for floorPrice < 50 USD>)
+
   - Fired when a previously indexed nft transaction has a value lower than a certain threshold (<-99% floor || 0)
   - Severity is always set to "Medium"
-  - Type is always set to "Suspicious" 
+  - Type is always set to "Suspicious"
     - Includes the labels:
-    - nft-phishing-victim     (address)
-    - nft-phishing-attacker   (address)
-    - nft-phising-transfer    (id,address)
+    - nft-phishing-victim (address)
+    - nft-phishing-attacker (address)
+    - nft-phising-transfer (id,address)
   - metadata example:
+
   ```
     "metadata": {
       "interactedMarket": "opensea",
@@ -68,12 +102,12 @@ Describe each of the type of alerts fired by this agent
   - Fired when a previously indexed nft id has a record that points to a a possible phishing attack.
   - Verifies by comparing the addresses between records and calculating the difference between values and floorPrice differences.
   - Severity is always set to "High"
-  - Type is always set to "Exploit" 
+  - Type is always set to "Exploit"
     - Includes the labels:
-    - nft-phishing-victim      (address)
-    - nft-phishing-attacker    (address)
-    - nft-phishing-attack-hash (hash) 
-    - stolen-nft               (id,address)
+    - nft-phishing-victim (address)
+    - nft-phishing-attacker (address)
+    - nft-phishing-attack-hash (hash)
+    - stolen-nft (id,address)
   - Includes the address from which the nft was stolen and the profit made by the scammer
   - metadata example:
   ```
@@ -102,22 +136,33 @@ Describe each of the type of alerts fired by this agent
       "attackHash": "0x4fff109d9a6c030fce4de9426229a113524903f0babd6de11ee6c046d07226ff"
     }
   ```
+
 ### Alerts Matchers
 
 Currently supported:
-+ floorPriceDiff is >110%
-+ floorPriceDiff is <1%
-+ transfer value is 0
-+ Indexed NFT sold
+
+- floorPriceDiff is >110%
+- floorPriceDiff is <1%
+- transfer value is 0
+- Indexed NFT sold
 
 Planned:
-+ NFTs sold too quickly (multiple thresholds)
-+ NFT Wash Trade
 
+- NFTs sold too quickly (multiple thresholds)
+- NFT Wash Trade
+
+### TXns for local testing (ETH)
+
+- nft-sale 0x701595f9c41f3da17ab5d0a2f6a999d78374d04c98422a2c145e2c27a753c4d9
+- nft-sale-floor-price-unknow 0x6da02cf9cb6c28e533114f3ce30feb0913069b08c7e354f14e18986729b2ce76
+- nft-sale-erc20-price-unknown 0x520242ccd170a17fc93b0b4e63dbe3c4af6ea6cbb5d92bcc81c970e7a003ec29
+- nft-sold-above-floor-price 0xa9da2e8aea6450e8d4bc544378c0b48d5cc4bb14c7a570f53948eb25dda4a154
+- indexed-nft-sale 0xe38e2be47b277e14d7bb5deeaeb00b128b6b179eb0b2f541f7633c9e45aed454
 
 ## Examples
 
 > Mutant Hound Collars 9911 sold for less than -99% of the floor price, at 0.0002 ETH with collection floor of 0.58 ETH
+
 ```
 5 findings for transaction 0x4fff109d9a6c030fce4de9426229a113524903f0babd6de11ee6c046d07226ff {
   "name": "scammer-nft-trader",
@@ -254,10 +299,10 @@ Planned:
 }
 
 ```
+
 ### Database Schema
 
 The database consists of three tables: users, transactions, and nfts. These tables store information about NFT users, their transactions, and the NFTs involved in those transactions
-
 
 #### Users Table
 
@@ -290,6 +335,7 @@ CREATE TABLE IF NOT EXISTS transactions (
 ```
 
 Columns
+
 - transaction_hash: The hash of the transaction (Primary Key)
 - interacted_market: The market where the transaction took place
 - to_address: The Ethereum address of the recipient
@@ -301,7 +347,6 @@ Columns
 - floor_price: The floor price of the NFT at the time of the transaction
 - timestamp: The timestamp of the transaction
 - floor_price_diff: The difference between the floor price and the average item price, expressed as a percentage
-
 
 #### NFTs Table
 
@@ -319,6 +364,7 @@ CREATE TABLE IF NOT EXISTS nfts (
 ```
 
 Columns
+
 - transaction_hash: The hash of the transaction in which the NFT was involved
 - token_id: The unique identifier of the NFT
 - name: The name of the NFT
@@ -326,8 +372,6 @@ Columns
 - price_currency_name: The name of the currency used for the NFT's price
 - price_currency_decimals: The number of decimals used in the currency
 - contract_address: The address of the NFT contract
-
-
 
 ## Test Data
 
@@ -347,23 +391,21 @@ Polygon OpenSea Trade:
 
 - npm run polytx 0x50b9f159f227ce8bf0f596831adaddad49616537d3f36d1b5533f89d4aa94a50
 
-## Alerts Test
-
-- nft-sale 0xb9c1bf89d896ae50ff0cb9bb3ad9de1292c4378516a4399d309658b1bb720252
-
 ## Current Test Suite:
 
-+ Database
-  + adds a new record
-  + adds multiple records
-  + check for duplicate hash
-  + save and retrive tx records
+- Database
 
-+ For newly indexed tokens txns
-  + possible phising (0 or <99% floor price sale)
-  + nft sale for >120% (configurable value)
-  + regular sales
+  - adds a new record
+  - adds multiple records
+  - check for duplicate hash
+  - save and retrive tx records
 
-+ For previosly indexed tokens txns
-  + regular salese (more info)
-  + verified phising transfers
+- For newly indexed tokens txns
+
+  - possible phising (0 or <99% floor price sale)
+  - nft sale for >120% (configurable value)
+  - regular sales
+
+- For previosly indexed tokens txns
+  - regular salese (more info)
+  - verified phising transfers

@@ -147,8 +147,6 @@ const handleTransaction: HandleTransaction = async (
   testAPI?: NftContract[]
 ) => {
   const network = txEvent.network;
-  console.log("network", network)
-
   const findings: Finding[] = [];
   const extraERC20: { usdPrice:number, value: string, name: string, decimals: number }[] = [];
   let currencyType;
@@ -167,7 +165,7 @@ const handleTransaction: HandleTransaction = async (
     console.log(txEvent.hash, "is not agent related")
     return findings;
   }
-  console.log("***", txEvent.hash, "is agent related")
+  console.log("***", txEvent.hash, "is agent related in network", network, "***")
 
 
   const nativeTokenPrice = await getNativeTokenPrice(network);
@@ -455,7 +453,7 @@ const handleTransaction: HandleTransaction = async (
                 alert.addresses.push(records[0].transaction.to_address);
                 alert.addresses.push(records[0].transaction.from_address);
               }
-              alert.metadata.attackHash = records[1].transaction.transaction_hash;
+              alert.metadata.lastTxn = records[1].transaction.transaction_hash;
 
 
               Object.keys(txEvent.addresses).forEach((address: string) => {
