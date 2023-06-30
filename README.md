@@ -70,16 +70,40 @@ Notes:
 - Includes the time between transactions
 - Includes the timeDiff between transactions
 - Includes the timestamp floorPriceDiff of the first and second txns
+- Incldes the hash of the first transaction
+- Labels
+  - indexed-nft-sale (id,address)
 
-**nft-phishing-sale** (nft-potential-low-value-phishing-sale for floorPrice < 50 USD>)
+Notes:
+
+- Metadata includes extra info related to each txn:
+```json
+    "current sale": {
+      "timestamp": 1688071607,
+      "floorPriceDiff": "+828.57%",
+      "avgItemPrice": 0.03250000000000001
+    },
+    "last sale": {
+      "timestamp": 1688066747,
+      "floorPriceDiff": "+757.14%",
+      "avgItemPrice": 0.03
+    }
+```
+
+
+**nft-phishing-sale**
 
   - Fired when a previously indexed nft transaction has a value lower than a certain threshold (<-99% floor || 0)
+  - Includes standard metadata
   - Severity is always set to "Medium"
   - Type is always set to "Suspicious"
     - Includes the labels:
     - nft-phishing-victim (address)
     - nft-phishing-attacker (address)
     - nft-phising-transfer (id,address)
+
+  Notes:
+  - If the floorPrice value is less than $50 USD the alert is fired with the name "nft-potential-low-value-phishing-sale"
   - metadata example:
 
   ```
@@ -98,9 +122,10 @@ Notes:
     }
   ```
 
-- stolen-nft-sale
+**stolen-nft-sale**
   - Fired when a previously indexed nft id has a record that points to a a possible phishing attack.
   - Verifies by comparing the addresses between records and calculating the difference between values and floorPrice differences.
+  - Includes standard metadata
   - Severity is always set to "High"
   - Type is always set to "Exploit"
     - Includes the labels:
@@ -109,6 +134,22 @@ Notes:
     - nft-phishing-attack-hash (hash)
     - stolen-nft (id,address)
   - Includes the address from which the nft was stolen and the profit made by the scammer
+
+Notes:
+
+- Metadata includes extra info related to each txn:
+```json
+    "current sale": {
+      "timestamp": 1688041691,
+      "floorPriceDiff": "+18.28%",
+      "avgItemPrice": 1.65
+    },
+    "last sale": {
+      "timestamp": 1688039219,
+      "floorPriceDiff": "-99.99%",
+      "avgItemPrice": 0.0002
+    }
+```
   - metadata example:
   ```
       "metadata": {
@@ -153,12 +194,20 @@ Planned:
 
 ### TXns for local testing (ETH)
 
-- nft-sale 0x701595f9c41f3da17ab5d0a2f6a999d78374d04c98422a2c145e2c27a753c4d9
-- nft-sale-floor-price-unknow 0x6da02cf9cb6c28e533114f3ce30feb0913069b08c7e354f14e18986729b2ce76
-- nft-sale-erc20-price-unknown 0x520242ccd170a17fc93b0b4e63dbe3c4af6ea6cbb5d92bcc81c970e7a003ec29
-- nft-sold-above-floor-price 0xa9da2e8aea6450e8d4bc544378c0b48d5cc4bb14c7a570f53948eb25dda4a154
-- indexed-nft-sale 0xe38e2be47b277e14d7bb5deeaeb00b128b6b179eb0b2f541f7633c9e45aed454
-
+- nft-sale 
+>0x701595f9c41f3da17ab5d0a2f6a999d78374d04c98422a2c145e2c27a753c4d9
+- nft-sale-floor-price-unknow 
+>0x6da02cf9cb6c28e533114f3ce30feb0913069b08c7e354f14e18986729b2ce76
+- nft-sale-erc20-price-unknown
+>0x520242ccd170a17fc93b0b4e63dbe3c4af6ea6cbb5d92bcc81c970e7a003ec29
+- nft-sold-above-floor-price
+>0xa9da2e8aea6450e8d4bc544378c0b48d5cc4bb14c7a570f53948eb25dda4a154
+- indexed-nft-sale
+>0xf4d3413b5b8706fcaf3696f4ad661993721d373ec86e1d7984fc0d5b3710f708,0xe38e2be47b277e14d7bb5deeaeb00b128b6b179eb0b2f541f7633c9e45aed454
+- nft-phishing-sale
+>0x5c2513c901e72a7d4a95123f91b800fc3451b698e4744a180648acd68f7a7461
+- stolen-nft-sale
+>0x68a5e8067bd0022a858cf1d76b00a7e737452e28b8d5acd5a5ec976aeb74d6e3,0x7a6c2ffc4c0e07ffe9f7766e16935c16d3452afbf2bbc66c0c4ea326dd299a51
 ## Examples
 
 > Mutant Hound Collars 9911 sold for less than -99% of the floor price, at 0.0002 ETH with collection floor of 0.58 ETH
@@ -380,8 +429,6 @@ The agent behaviour can be verified with the following transactions:
 - 0xdc6fd3c2846f330aec65615341789397e1a9bb37a471851fe68b2db20a5a7b9f OpenSea Trade
 - 0x3b5966677f3b062c1ee2651b2dcc473b9a7d7cab995bf371e1952d0366ee4c67 Looks Rare
 - 0xd7dbed24b00aa1ad13070da9221f10b050c1cdaf75f161e9ec5e3582f2450943 Blur
-
-npm run tx 0x4fff109d9a6c030fce4de9426229a113524903f0babd6de11ee6c046d07226ff,0xdc6fd3c2846f330aec65615341789397e1a9bb37a471851fe68b2db20a5a7b9f
 
 BSC OpenSea Trade:
 

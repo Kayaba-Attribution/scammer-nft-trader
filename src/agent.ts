@@ -367,15 +367,17 @@ const handleTransaction: HandleTransaction = async (
               let findType: FindingType = FindingType.Info;
               let find_name = `indexed-nft-sale`
               let floorDiffs = Math.abs(extractNumericalValue(floorPriceDiffs['current sale'].floorPriceDiff)) - Math.abs(lastSaleFloorPrice)
-
+              let currentSaleFloorPrice = extractNumericalValue(floorPriceDiffs['current sale'].floorPriceDiff);
               let alert: Finding;
               let alertLabel: Label[] = [];
               let regularSaleExtra = `, for a value of ${truncateDecimal(records[0].transaction.avg_item_price)} ${chainCurrency} where the price floor is ${records[0].transaction.floor_price} ${chainCurrency}`;
-
-              console.log("----- floorDiffs -----", floorDiffs, lastSaleFloorPrice)
-
+              
               if (floorDiffs < 0) floorDiffs *= -1;
-              if (floorDiffs > 85 && lastSaleFloorPrice <= -98) {
+              console.log("----- floorDiffs -----", floorDiffs, lastSaleFloorPrice)
+              console.log("----- stolen sale condition -----", floorDiffs > 85, currentSaleFloorPrice > 0, lastSaleFloorPrice <= -98)
+
+              
+              if ((floorDiffs > 80 || currentSaleFloorPrice > 0 ) && lastSaleFloorPrice <= -98) {
                 let victim = records[1].transaction.from_address;
                 let attacker = records[1].transaction.to_address;
                 let profit = Math.abs(avgItemPriceDifference).toFixed(3);
