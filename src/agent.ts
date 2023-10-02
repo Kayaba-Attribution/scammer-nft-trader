@@ -11,9 +11,11 @@ import {
   Label,
   FindingSeverity,
   getEthersProvider,
+  getJsonRpcUrl,
   getChainId,
   Log
 } from "forta-agent";
+
 
 import { Network as fortaNetwork } from "forta-agent";
 
@@ -43,7 +45,7 @@ import { transferIndexer } from './controllers/parseTx.js';
 import type { TransactionRecord, TransactionData, TokenInfo } from './types/types.js';
 import { markets, currencies } from './config/markets';
 import { getCurrentTimestamp } from "./utils/tests";
-import { forEach, round, set } from "lodash";
+import { forEach, iteratee, round, set } from "lodash";
 import { AbiCoder } from "ethers";
 
 
@@ -97,7 +99,7 @@ function compareKeysAndElements(obj: { [key: string]: boolean }, arr: string[]):
 }
 
 
-async function extractTransferInfo(log: Log, network: fortaNetwork): Promise<{ usdPrice:number, value: string, name: string, decimals: number } | null> {
+async function extractTransferInfo(log: Log, network: fortaNetwork): Promise<{ usdPrice: number, value: string, name: string, decimals: number } | null> {
   const { address, topics, data } = log;
 
   if (currencies.hasOwnProperty(address)) {
@@ -148,7 +150,7 @@ const handleTransaction: HandleTransaction = async (
 ) => {
   const network = txEvent.network;
   const findings: Finding[] = [];
-  const extraERC20: { usdPrice:number, value: string, name: string, decimals: number }[] = [];
+  const extraERC20: { usdPrice: number, value: string, name: string, decimals: number }[] = [];
   let currencyType;
 
   let NFT_RELATED = false;
@@ -168,8 +170,11 @@ const handleTransaction: HandleTransaction = async (
   console.log("***", txEvent.hash, "is agent related in network", network, "***")
 
 
-  const nativeTokenPrice = await getNativeTokenPrice(network);
+  const nativeTokenPrice = testAPI ? 777 : await getNativeTokenPrice(network);
   console.log("nativeTokenPrice", nativeTokenPrice)
+
+  let jsonURL = getJsonRpcUrl()
+  console.log("jsonURL", jsonURL)
   const provider = getEthersProvider();
   const chainId = (await provider.getNetwork()).chainId;
 
@@ -303,7 +308,7 @@ const handleTransaction: HandleTransaction = async (
               record.totalPrice = round(record.totalPrice, 2);
             }
 
-            if(nativeTokenPrice){
+            if (nativeTokenPrice) {
               nativeERC20value = Number(truncateDecimal(Number(sumValues[tokenName]) * Number(extraERC20[0].usdPrice) / nativeTokenPrice));
               ercToNativeMSG = `(~${nativeERC20value} ${chainCurrency})`
               console.log(`1 ${chainCurrency} = ${nativeTokenPrice} | 1 ${tokenName} => ${extraERC20[0].usdPrice} | ${sumValues[tokenName]} ${tokenName} = ${nativeERC20value} ${chainCurrency} ${ercToNativeMSG}`)
@@ -371,13 +376,13 @@ const handleTransaction: HandleTransaction = async (
               let alert: Finding;
               let alertLabel: Label[] = [];
               let regularSaleExtra = `, for a value of ${truncateDecimal(records[0].transaction.avg_item_price)} ${chainCurrency} where the price floor is ${records[0].transaction.floor_price} ${chainCurrency}`;
-              
+
               if (floorDiffs < 0) floorDiffs *= -1;
               console.log("----- floorDiffs -----", floorDiffs, lastSaleFloorPrice)
               console.log("----- stolen sale condition -----", floorDiffs > 85, currentSaleFloorPrice > 0, lastSaleFloorPrice <= -98)
 
-              
-              if ((floorDiffs > 80 || currentSaleFloorPrice > 0 ) && lastSaleFloorPrice <= -98) {
+
+              if ((floorDiffs > 80 || currentSaleFloorPrice > 0) && lastSaleFloorPrice <= -98) {
                 let victim = records[1].transaction.from_address;
                 let attacker = records[1].transaction.to_address;
                 let profit = Math.abs(avgItemPriceDifference).toFixed(3);
@@ -514,35 +519,9 @@ const handleTransaction: HandleTransaction = async (
                   alert_severity = FindingSeverity.Medium;
                   alert_type = FindingType.Suspicious;
                   alert_name = `nft-phishing-sale`;
-                  if(floorPriceUSD < 50) alert_name = `nft-potential-low-value-phishing-sale`;
+                  if (floorPriceUSD < 50) alert_name = `nft-potential-low-value-phishing-sale`;
                   alert_description = `${tokenName} ${tokenKey} sold for less than -99% of the floor price, ${extraInfo}`;
-                  alertLabel.push({
-                    entityType: EntityType.Address,
-                    entity: `${record.fromAddr}`,
-                    label: "nft-phishing-victim",
-                    confidence: 0.8,
-                    remove: false,
-                    metadata: {}
-                  })
-
-                  alertLabel.push({
-                    entityType: EntityType.Address,
-                    entity: `${record.toAddr}`,
-                    label: "nft-phishing-attacker",
-                    confidence: 0.8,
-                    remove: false,
-                    metadata: {}
-                  })
-
-                  alertLabel.push({
-                    entityType: EntityType.Address,
-                    entity: `${tokenKey},${record.contractAddress}`,
-                    label: "nft-phising-transfer",
-                    confidence: 0.9,
-                    remove: false,
-                    metadata: {}
-                  })
-
+                  // labels on alerts.ts
 
                 } else {
                   /**
@@ -551,18 +530,11 @@ const handleTransaction: HandleTransaction = async (
                   //console.log(JSON.stringify(find.tokens[tokenKey] , null, 2))
                   //let currencyType = find && tokenKey && find.tokens[tokenKey] ? find.tokens[tokenKey].markets!.price.currency.name : chainCurrency;
                   alert_name = `nft-sale`;
-                  if(isZeroERC20) alert_name = `nft-sale-erc20-price-unknown`;
-                  if(floorPriceUSD == 0) alert_name = `nft-sale-floor-price-unknown`;
+                  if (isZeroERC20) alert_name = `nft-sale-erc20-price-unknown`;
+                  if (floorPriceUSD == 0) alert_name = `nft-sale-floor-price-unknown`;
                   let customValue = `${nativeERC20value != 0 ? sumValues[extraERC20[0].name] : truncateDecimal((record.avgItemPrice))}`
-                  alert_description = `${tokenName} id ${tokenKey} sold at ${customValue} ${currencyType || chainCurrency} ${ercToNativeMSG ? ercToNativeMSG: ''} ${floorMessage} (${record.floorPriceDiff})`;
-                  alertLabel.push({
-                    entityType: EntityType.Address,
-                    entity: `${tokenKey},${record.contractAddress}`,
-                    label: "nft-sale-record",
-                    confidence: 0.9,
-                    remove: false,
-                    metadata: {}
-                  })
+                  alert_description = `${tokenName} id ${tokenKey} sold at ${customValue} ${currencyType || chainCurrency} ${ercToNativeMSG ? ercToNativeMSG : ''} ${floorMessage} (${record.floorPriceDiff})`;
+                  // labels on alerts.ts
                 }
 
                 let alert = createCustomAlert(
@@ -571,12 +543,9 @@ const handleTransaction: HandleTransaction = async (
                   alert_name,
                   alert_type,
                   alert_severity,
-                  chainId
+                  chainId,
+                  { tokenKey: tokenKey }
                 );
-
-                alert.addresses.push(record.fromAddr!);
-                alert.addresses.push(record.toAddr!);
-                alert.addresses.push(record.initiator!);
 
                 for (const label of alertLabel) {
                   alert.labels.push(label);
@@ -594,6 +563,91 @@ const handleTransaction: HandleTransaction = async (
         }
 
       }
+
+      // Edge Case transfer between two addresses 
+
+      type Transaction = { from: string; to: string; };
+      type ContractInfo = { [id: string]: Transaction; };
+      let info: Record<string, ContractInfo> = {};
+
+      // info['someContract'] = {
+      //   'someId': {
+      //     from: 'address1',
+      //     to: 'address2'
+      //   },
+      //   'anotherId': {
+      //     from: 'address3',
+      //     to: 'address4'
+      //   }
+      // };
+
+      for (const find of findings) {
+
+        let cacheContract: string = '';
+        let cacheTokenId: string = '';
+        for (const label of find.labels) {
+
+          if (["nft-sale-record", "nft-phising-transfer"].includes(label.label)) {
+            const [tokenId, contractAddress] = label.entity.split(",");
+            info[contractAddress] = {
+              [tokenId]: {
+                from: "",
+                to: ""
+              }
+            };
+
+            cacheContract = contractAddress;
+          }
+
+          // by order next two labels are from and to
+          if (["nft-sender", "nft-phishing-victim"].includes(label.label)) {
+            info[cacheContract][cacheTokenId].from = label.entity;
+          }
+          if (["nft-receiver", "nft-phishing-attacker"].includes(label.label)) {
+            info[cacheContract][cacheTokenId].to = label.entity;
+          }
+        }
+      }
+
+      // check for false positives between two records
+      for (const contractKey in info) {
+        const contract = info[contractKey];
+        const ids = Object.keys(contract);
+
+        if (ids.length >= 2) {
+          const firstId = ids[0];
+          const secondId = ids[1];
+
+          if (
+            contract[firstId].from === contract[secondId].to &&
+            contract[firstId].to === contract[secondId].from
+          ) {
+            // this is a transfer between two addresses not phishing
+            for (let find of findings) {
+              for (let label of find.labels) {
+                {
+                  if (label.label === "nft-phising-transfer") {
+                    // remove find from findings
+                    findings.splice(findings.indexOf(find), 1);
+                  }
+                  if (label.label == "nft-sale-record") {
+                    const [tokenId, contractAddress] = label.entity.split(",");
+                    if (contractAddress === contractKey) {
+                      // duplicate find
+                      let newFind = JSON.parse(JSON.stringify(find));
+
+                    }
+                  }
+                }
+              }
+
+            }
+          }
+        }
+
+      }
+
+      // end ---
     }
 
     catch (e) {
@@ -627,7 +681,7 @@ function truncateDecimal(number: number): string {
 
   // Finding the maximum index based on the number of significant decimal places
   const maxIndex = decimalPointIndex + maxDecimals;
-  
+
   // Return the truncated string limited by the number of significant decimal places
   return decimalString.slice(0, Math.min(lastIndex + 1, maxIndex));
 }
@@ -643,7 +697,7 @@ function extractNumericalValue(floorPriceDiff: string | undefined): number {
 
 
 const initialize: Initialize = async () => {
-  
+
 }
 
 const getName = async (provider: ethers.providers.Provider, address: string): Promise<string> => {

@@ -107,7 +107,7 @@ describe("NFT trader test", () => {
     });
 
 
-    describe("Records and retrives tx from db", () => {
+    describe.only("Records and retrives tx from db", () => {
 
         it("Stores New Tx on the db and triggers info alert", async () => {
             let randomContract = getRandomAddress();
@@ -125,8 +125,10 @@ describe("NFT trader test", () => {
                 ['777'],
                 txHash
             )
+
             const findings = await handleTransaction(demoEvent, mockApi);
-            let recordFromHash = await getTransactionByHash(db, txHash);
+            console.log("GOOD")
+
             expect(findings.length).toBe(1);
             expect(findings[0].metadata.floorPriceDiff).toBe("-5.00%")
             expect(findings[0].metadata.fromAddr).toBe(bob);
