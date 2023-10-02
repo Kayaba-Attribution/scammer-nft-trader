@@ -4,7 +4,7 @@ import { TransactionRecord } from 'src/types/types';
 export function createCustomAlert(
   record: TransactionRecord,
   description: string,
-  find_name: string,
+  alert_name: string,
   findingType: FindingType,
   severity: FindingSeverity,
   chainId: number,
@@ -49,7 +49,7 @@ export function createCustomAlert(
   const findingInput = {
     name: 'scammer-nft-trader',
     description: market ? `[${market}] ${description}` : description,
-    alertId: find_name,
+    alertId: alert_name,
     severity: severity,
     type: findingType,
     metadata,
@@ -59,7 +59,7 @@ export function createCustomAlert(
 
   let alertLabel: Label[] = [];
 
-  if (find_name == 'nft-sale'){
+  if (alert_name == 'nft-sale'){
     alertLabel.push({
       entityType: EntityType.Address,
       entity: `${additionalMetadata.tokenKey},${record.contractAddress}`,
@@ -85,7 +85,17 @@ export function createCustomAlert(
       metadata: {}
     })
     
-  } else if (find_name == 'nft-phishing-sale'){
+  } else if (alert_name == 'nft-sold-above-floor-price'){
+    alertLabel.push({
+      entityType: EntityType.Address,
+      entity: `${additionalMetadata.tokenKey},${record.contractAddress}`,
+      label: "nft-sold-above-floor-price",
+      confidence: 0.9,
+      remove: false,
+      metadata: {}
+    })
+
+  } else if (alert_name == 'nft-phishing-sale'){
     alertLabel.push({
       entityType: EntityType.Address,
       entity: `${additionalMetadata.tokenKey},${record.contractAddress}`,
@@ -112,7 +122,6 @@ export function createCustomAlert(
       remove: false,
       metadata: {}
     })
-
   }
 
   let find : Finding = Finding.from(findingInput);

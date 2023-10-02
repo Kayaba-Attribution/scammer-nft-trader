@@ -507,14 +507,7 @@ const handleTransaction: HandleTransaction = async (
                 if (numericalValue >= 20) {
                   alert_name = `nft-sold-above-floor-price`;
                   alert_description = `${tokenName} ${tokenKey} sold for more than 110% of the floor price, ${extraInfo}`;
-                  alertLabel.push({
-                    entityType: EntityType.Address,
-                    entity: `${tokenKey},${record.contractAddress}`,
-                    label: "nft-sold-above-floor-price",
-                    confidence: 0.9,
-                    remove: false,
-                    metadata: {}
-                  })
+                  // labels on alerts.ts
                 } else if (numericalValue >= -100 && numericalValue <= -98 && !isZeroERC20) {
                   alert_severity = FindingSeverity.Medium;
                   alert_type = FindingType.Suspicious;
@@ -522,7 +515,6 @@ const handleTransaction: HandleTransaction = async (
                   if (floorPriceUSD < 50) alert_name = `nft-potential-low-value-phishing-sale`;
                   alert_description = `${tokenName} ${tokenKey} sold for less than -99% of the floor price, ${extraInfo}`;
                   // labels on alerts.ts
-
                 } else {
                   /**
                    * ALL NEW REGULAR SALES GO HERE
@@ -547,10 +539,6 @@ const handleTransaction: HandleTransaction = async (
                   { tokenKey: tokenKey }
                 );
 
-                for (const label of alertLabel) {
-                  alert.labels.push(label);
-                }
-
                 Object.keys(txEvent.addresses).forEach((address: string) => {
                   alert.addresses.push(address);
                 });
@@ -568,7 +556,7 @@ const handleTransaction: HandleTransaction = async (
 
       type Transaction = { from: string; to: string; };
       type ContractInfo = { [id: string]: Transaction; };
-      let info: Record<string, ContractInfo> = {};
+      let cash: Record<string, ContractInfo> = {};
 
       // info['someContract'] = {
       //   'someId': {
@@ -589,7 +577,7 @@ const handleTransaction: HandleTransaction = async (
 
           if (["nft-sale-record", "nft-phising-transfer"].includes(label.label)) {
             const [tokenId, contractAddress] = label.entity.split(",");
-            info[contractAddress] = {
+            cash[contractAddress] = {
               [tokenId]: {
                 from: "",
                 to: ""
@@ -601,17 +589,17 @@ const handleTransaction: HandleTransaction = async (
 
           // by order next two labels are from and to
           if (["nft-sender", "nft-phishing-victim"].includes(label.label)) {
-            info[cacheContract][cacheTokenId].from = label.entity;
+            cash[cacheContract][cacheTokenId].from = label.entity;
           }
           if (["nft-receiver", "nft-phishing-attacker"].includes(label.label)) {
-            info[cacheContract][cacheTokenId].to = label.entity;
+            cash[cacheContract][cacheTokenId].to = label.entity;
           }
         }
       }
 
       // check for false positives between two records
       for (const contractKey in info) {
-        const contract = info[contractKey];
+        const contract = cash[contractKey];
         const ids = Object.keys(contract);
 
         if (ids.length >= 2) {
