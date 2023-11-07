@@ -4,7 +4,7 @@ import { TransactionRecord } from 'src/types/types';
 export function createCustomAlert(
   record: TransactionRecord,
   description: string,
-  name: string,
+  alert_name: string,
   findingType: FindingType,
   severity: FindingSeverity,
   chainId: number,
@@ -26,18 +26,6 @@ export function createCustomAlert(
   };
 
   const labels: Label[] = [];
-
-  for (const tokenId in record.tokens) {
-    const token = record.tokens[tokenId];
-    // labels.push({
-    //     entityType: EntityType.Address,
-    //     entity: `${tokenId},${record.contractAddress}`,
-    //     label: "uncommon-sale",
-    //     confidence: 0.9,
-    //     remove: false,
-    //     metadata: {}
-    // })
-  }
 
   let protocol_name = 'ethereum';
   if (chainId === 56) protocol_name = 'bsc';
@@ -61,13 +49,91 @@ export function createCustomAlert(
   const findingInput = {
     name: 'scammer-nft-trader',
     description: market ? `[${market}] ${description}` : description,
-    alertId: name,
+    alertId: alert_name,
     severity: severity,
     type: findingType,
     metadata,
     labels,
     protocol: protocol_name
   };
+
+  let alertLabel: Label[] = [];
+
+  if (alert_name == 'nft-sale'){
+    alertLabel.push({
+      entityType: EntityType.Address,
+      entity: `${additionalMetadata.tokenKey},${record.contractAddress}`,
+      label: "nft-sale-record",
+      confidence: 0.9,
+      remove: false,
+      metadata: {}
+    })
+    alertLabel.push({
+      entityType: EntityType.Address,
+      entity: `${record.fromAddr}`,
+      label: "nft-sender",
+      confidence: 0.8,
+      remove: false,
+      metadata: {}
+    })
+    alertLabel.push({
+      entityType: EntityType.Address,
+      entity: `${record.toAddr}`,
+      label: "nft-receiver",
+      confidence: 0.8,
+      remove: false,
+      metadata: {}
+    })
+    
+  } else if (alert_name == 'nft-sold-above-floor-price'){
+    alertLabel.push({
+      entityType: EntityType.Address,
+      entity: `${additionalMetadata.tokenKey},${record.contractAddress}`,
+      label: "nft-sold-above-floor-price",
+      confidence: 0.9,
+      remove: false,
+      metadata: {}
+    })
+
+  } else if (alert_name == 'nft-phishing-sale'){
+    alertLabel.push({
+      entityType: EntityType.Address,
+      entity: `${additionalMetadata.tokenKey},${record.contractAddress}`,
+      label: "nft-phising-transfer",
+      confidence: 0.9,
+      remove: false,
+      metadata: {}
+    })
+
+    alertLabel.push({
+      entityType: EntityType.Address,
+      entity: `${record.fromAddr}`,
+      label: "nft-phishing-victim",
+      confidence: 0.8,
+      remove: false,
+      metadata: {}
+    })
+
+    alertLabel.push({
+      entityType: EntityType.Address,
+      entity: `${record.toAddr}`,
+      label: "nft-phishing-attacker",
+      confidence: 0.8,
+      remove: false,
+      metadata: {}
+    })
+  }
+
+  let find : Finding = Finding.from(findingInput);
+
+  for (const label of alertLabel) {
+    find.labels.push(label);
+  }
+
+  find.addresses.push(record.fromAddr!);
+  find.addresses.push(record.toAddr!);
+  find.addresses.push(record.initiator!);
+
   //console.log('findingInput', findingInput);
-  return Finding.from(findingInput);
+  return find;
 }
