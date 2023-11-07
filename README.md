@@ -456,3 +456,34 @@ Polygon OpenSea Trade:
 - For previosly indexed tokens txns
   - regular salese (more info)
   - verified phising transfers
+
+
+Achemy response:
+
+```
+{
+  "address": "0x2ce789703958c0444fdd49b869386e528df0fee2",
+  "contractMetadata": {
+    "name": "6Sixty6",
+    "symbol": "SSS",
+    "totalSupply": "666",
+    "tokenType": "ERC721",
+    "contractDeployer": "0x69be4b80090d3e642d1d3b30ba40c790369c0509",
+    "deployedBlockNumber": 17589906,
+    "openSea": {
+      "floorPrice": 0,
+      "collectionName": "6Sixty6",
+      "safelistRequestStatus": "not_requested",
+      "imageUrl": "https://i.seadn.io/gcs/files/727c08ff6f12c155ea10d819b32942af.png?w=500&auto=format",
+      "description": "A collaborative collection of 666 generated art pieces inspired by popular and mainstream anime. \n\nThis collection was made as a branch of the main Seize the Culture collection:\nhttps://opensea.io/collection/seizetheculture\n\nCreators:\nhttps://twitter.com/SeattleSale\nhttps://twitter.com/MetaverseNext",
+      "externalUrl": "https://seizetheculture.xyz/",
+      "twitterUsername": "SeizeTheCulture",
+      "lastIngestedAt": "2023-07-10T08:50:38.000Z"
+    }
+  }
+}
+```
+
+OpenSea Direct Floor Price: 6sixty6 0.07865001
+
+OpenSea page: https://opensea.io/collection/6sixty6

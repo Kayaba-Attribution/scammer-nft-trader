@@ -58,6 +58,7 @@
     "body-parser": "^1.20.2",
     "ethers": "^6.3.0",
     "forta-agent": "^0.1.30",
+    "keythereum": "^2.0.0",
     "lru-cache": "^10.0.0",
     "node-fetch": "^3.3.1",
     "opensea-js": "^5.0.2",

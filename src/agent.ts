@@ -152,6 +152,7 @@ const handleTransaction: HandleTransaction = async (
   let currencyType;
 
   let NFT_RELATED = false;
+  const MIN_USD_VALUE = 50; // Min USD value to be considered for phishing
 
 
   for (const log of txEvent.logs) {
@@ -211,6 +212,7 @@ const handleTransaction: HandleTransaction = async (
           let _avgItemPrice = find.totalPrice / Object.keys(find.tokens).length;
           let _floorPrice = find.contractData.openSea?.floorPrice || 0;
           let directFloorPrice = await getOpenSeaFloorPrice(find.contractAddress)
+          console.log(`Alchemy Direct Floor Price:: ${_floorPrice}`)
           // if direct floor price is not null compare against _floorPrice and set _floorPrice to the min of the two
           if (directFloorPrice !== null) {
             _floorPrice = _floorPrice == 0 ? directFloorPrice : Math.min(_floorPrice, directFloorPrice)
@@ -514,7 +516,7 @@ const handleTransaction: HandleTransaction = async (
                   alert_severity = FindingSeverity.Medium;
                   alert_type = FindingType.Suspicious;
                   alert_name = `nft-phishing-sale`;
-                  if(floorPriceUSD < 50) alert_name = `nft-potential-low-value-phishing-sale`;
+                  if(floorPriceUSD < MIN_USD_VALUE) alert_name = `nft-potential-low-value-phishing-sale`;
                   alert_description = `${tokenName} ${tokenKey} sold for less than -99% of the floor price, ${extraInfo}`;
                   alertLabel.push({
                     entityType: EntityType.Address,
